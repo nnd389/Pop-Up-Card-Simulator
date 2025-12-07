@@ -417,15 +417,70 @@ function initDynamicSolver(globals){
             }
             for (var j=0;j<nodes[i].beams.length;j++){
                 var beam = nodes[i].beams[j];
+                var beam_assignment = beam.type;
                 beamMeta[4*index] = beam.getK();
                 beamMeta[4*index+1] = beam.getD();
                 if (initing) {
-                    beamMeta[4*index+2] = beam.getLength();
-                    beamMeta[4*index+3] = beam.getOtherNode(nodes[i]).getIndex();
+                    //for nina, eggregiously wrong, FIX
+                    //if(index==2 || index==9){
+                    //    beamMeta[4*index+2] = 0.5*beam.getLength();
+                    //    beamMeta[4*index+3] = beam.getOtherNode(nodes[i]).getIndex();
+                   // }
+                    //else{
+                        //console.log("here is the beam that is being added to beamMeta", beam, beam.type);
+                        beamMeta[4*index+2] = beam.getLength(beam_assignment);
+                        beamMeta[4*index+3] = beam.getOtherNode(nodes[i]).getIndex();
+                    //}
+                    
                 }
                 index+=1;
             }
         }
+        // for nina
+        // === Pretty printing for debugging ===
+
+        // --- Print beamMeta ---
+        // console.group("BeamMeta (per-beam parameters)");
+
+        // for (let b = 0; b < index; b++) {
+        //     const K    = beamMeta[4*b + 0];
+        //     const D    = beamMeta[4*b + 1];
+        //     const L0   = beamMeta[4*b + 2];
+        //     const nbr  = beamMeta[4*b + 3];
+
+        //     console.log(
+        //         `Beam ${b}:`,
+        //         `K=${K.toFixed(4)},`,
+        //         `D=${D.toFixed(4)},`,
+        //         `restLength=${L0.toFixed(4)},`,
+        //         `otherNode=${nbr}`
+        //     );
+        // }
+
+        // console.groupEnd();
+
+
+        // // --- Print meta (per-node beam index info) ---
+        // console.group("Meta (node → beam mapping)");
+
+        // for (let n = 0; n < nodes.length; n++) {
+        //     const start = meta[4*n + 0];
+        //     const count = meta[4*n + 1];
+        //     console.log(
+        //         `Node ${n}: beamStartIndex=${start}, numBeams=${count}`
+        //     );
+        // }
+        console.log("Nodes", nodes);
+        console.log("Edges", edges);
+        console.log("Creases", creases);
+
+        // console.groupEnd();
+
+
+
+
+
+
         globals.gpuMath.initTextureFromData("u_beamMeta", textureDimEdges, textureDimEdges, "FLOAT", beamMeta, true);
 
 

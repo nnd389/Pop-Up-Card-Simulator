@@ -1,3 +1,5 @@
+# NOTE
+This is a near replica of Origami Simulator by Amanda Ghassai with some edits to allow for glue tabs. I will be editing this repository in the coming months. If you ended up here you were probably looking for the original origami simulator at: https://github.com/amandaghassaei/OrigamiSimulator/tree/7855983a613c879c171b2b1557f8cd102d2640cf
 # OrigamiSimulator
 
 Live demo at <a href="https://origamisimulator.org/">origamisimulator.org</a><br/>

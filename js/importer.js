@@ -7,32 +7,32 @@ function initImporter(globals){
 
     var reader = new FileReader();
 
-    function importDemoFile(url){
-        var extension = url.split(".");
-        var name = extension[extension.length-2].split("/");
-        name = name[name.length-1];
-        extension = extension[extension.length-1];
-        // globals.setCreasePercent(0);
-        if (extension == "svg"){
-            globals.url = url;
-            globals.filename = name;
-            globals.extension = extension;
-            if (!globals.includeCurves) {
-                globals.pattern.loadSVG("assets/" + url, true);
-            } else {
-                globals.curvedFolding.loadSVG("assets/" + url, true);
-            }
-        } else if (extension == "fold"){
+        function importDemoFile(url){
+            var extension = url.split(".");
+            var name = extension[extension.length-2].split("/");
+            name = name[name.length-1];
+            extension = extension[extension.length-1];
+            // globals.setCreasePercent(0);
+            if (extension == "svg"){
                 globals.url = url;
                 globals.filename = name;
                 globals.extension = extension;
-                $.getJSON("assets/" + url, undefined, function (fold) {
-                    globals.pattern.setFoldData(fold, true);
-                });
-        } else {
-            console.warn("unknown extension: " + extension);
+                if (!globals.includeCurves) {
+                    globals.pattern.loadSVG("assets/" + url, true);
+                } else {
+                    globals.curvedFolding.loadSVG("assets/" + url, true);
+                }
+            } else if (extension == "fold"){
+                    globals.url = url;
+                    globals.filename = name;
+                    globals.extension = extension;
+                    $.getJSON("assets/" + url, undefined, function (fold) {
+                        globals.pattern.setFoldData(fold, true);
+                    });
+            } else {
+                console.warn("unknown extension: " + extension);
+            }
         }
-    }
 
     // Adobe Illustrator and Cuttle.xyz copy vector shapes as SVG string. By
     // listening for a paste event, we can turn the SVG string into a Blob
@@ -88,7 +88,9 @@ function initImporter(globals){
                         globals.extension = extension;
                         globals.url = null;
                         if (!globals.includeCurves) {
-                            globals.pattern.loadSVG(reader.result);    
+                            globals.pattern.loadSVG(reader.result); 
+                            //for nina
+                            //globals.pattern.printAllEdgesVerticesFaces();   
                         } else {
                             globals.curvedFolding.loadSVG(reader.result);
                         }
@@ -158,7 +160,7 @@ function initImporter(globals){
                                     creaseParams[5] = fold.edges_foldAngle[i];
                                     j++;
                                 }
-                                globals.model.buildModel(fold, allCreaseParams);
+                                globals.model.buildModel(fold, allCreaseParams, allGlueParams);
                                 return;
                             }
                             var foldAngles = [];
@@ -259,6 +261,8 @@ function initImporter(globals){
     function warnUnableToLoad(){
         globals.warn("Unable to load file.");
     }
+
+    
 
     return {
         importDemoFile: importDemoFile

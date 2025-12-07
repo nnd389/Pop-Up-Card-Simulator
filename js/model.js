@@ -18,6 +18,7 @@ function initModel(globals){
     var cutLines = new THREE.LineSegments(null, lineMaterial);
     var facetLines = new THREE.LineSegments(null, lineMaterial);
     var borderLines = new THREE.LineSegments(null, lineMaterial);
+    var glueTabLines = new THREE.LineSegments(null, lineMaterial);
 
     var lines = {
         U: hingeLines,
@@ -25,7 +26,8 @@ function initModel(globals){
         V: valleyLines,
         C: cutLines,
         F: facetLines,
-        B: borderLines
+        B: borderLines,
+        G: glueTabLines
     };
 
     clearGeometries();
@@ -72,10 +74,11 @@ function initModel(globals){
     var faces = [];
     var edges = [];
     var creases = [];
+    var glues = [];
     var vertices = [];//indexed vertices array
-    var fold, creaseParams;
+    var fold, creaseParams, glueParams;
 
-    var nextCreaseParams, nextFold;//todo only nextFold, nextCreases?
+    var nextCreaseParams, nextFold, nextGlueParams;//todo only nextFold, nextCreases?
 
     var inited = false;
 
@@ -132,6 +135,8 @@ function initModel(globals){
         hingeLines.visible = globals.edgesVisible && globals.passiveEdgesVisible;
         borderLines.visible = globals.edgesVisible && globals.boundaryEdgesVisible;
         cutLines.visible = false;
+        glueTabLines.visible = globals.edgesVisible && globals.passiveEdgesVisible;
+
     }
 
     function updateMeshVisibility(){
@@ -192,7 +197,7 @@ function initModel(globals){
 
 
 
-    function buildModel(fold, creaseParams){
+    function buildModel(fold, creaseParams, glueParams){
 
         if (fold.vertices_coords.length == 0) {
             globals.warn("No geometry found.");
@@ -209,6 +214,7 @@ function initModel(globals){
 
         nextFold = fold;
         nextCreaseParams = creaseParams;
+        nextGlueParams = glueParams;
 
         globals.needsSync = true;
         globals.simNeedsSync = true;
@@ -235,13 +241,20 @@ function initModel(globals){
             creases[i].destroy();
         }
 
+        for (var i=0;i<glues.length;i++){
+            glues[i].destroy();
+        }
+
         fold = nextFold;
         nodes = [];
         edges = [];
         faces = fold.faces_vertices;
         creases = [];
+        glues = [];
         creaseParams = nextCreaseParams;
+        glueParams = nextGlueParams;
         var _edges = fold.edges_vertices;
+        var _assignments = fold.edges_assignment;
 
         var _vertices = [];
         for (var i=0;i<fold.vertices_coords.length;i++){
@@ -257,11 +270,35 @@ function initModel(globals){
         // _nodes[_faces[0][2]].setFixed(true);
 
         for (var i=0;i<_edges.length;i++) {
-            edges.push(new Beam([nodes[_edges[i][0]], nodes[_edges[i][1]]]));
+            console.log("Here is i", i);
+            console.log("Here is _edges[i][0] ", _edges[i][0]);
+            console.log("Here is _edges[i][1] ", _edges[i][1]);
+            console.log("Here is _assignments[i] ", _assignments[i]);
+            console.log("Here's what we are feeding into the new beam: ", nodes[_edges[i][0]], nodes[_edges[i][1]], _assignments[i]);
+            
+            let myNewBeam = new Beam([nodes[_edges[i][0]], nodes[_edges[i][1]]], _assignments[i]);
+            edges.push(myNewBeam);
+            
+            // this length is being normalized somewhere else in the code and I want to know where 
+            // for nina FIX        
+        }
+        
+        // Now we are going to create the glue springs! (these are just a few extra beams)
+        console.log("About to add glue springs, here is glue params: ", glueParams, glueParams.length);
+        for (var i=0;i<glueParams.length;i++){
+            console.log("Check 1")
+            //FIX need to clean up glueParams so that there are now repeats, this is adding double the added amount
+            let myNewBeam = new Beam([nodes[glueParams[i][0]], nodes[glueParams[i][1]]], "GS");
+            let myNewBeam1 = new Beam([nodes[glueParams[i][2]], nodes[glueParams[i][3]]], "GS");
+            edges.push(myNewBeam);
+            edges.push(myNewBeam1);
         }
 
+
+        
         for (var i=0;i<creaseParams.length;i++) {//allCreaseParams.length
             var _creaseParams = creaseParams[i];//face1Ind, vert1Ind, face2Ind, ver2Ind, edgeInd, angle
+            console.log("Here is _creaseParams[", i, "]: ", _creaseParams);
             var type = _creaseParams[5]!=0 ? 1:0;
             //edge, face1Index, face2Index, targetTheta, type, node1, node2, index
             creases.push(new Crease(
@@ -274,6 +311,27 @@ function initModel(globals){
                 nodes[_creaseParams[3]],
                 creases.length));
         }
+
+        // Adding in Glues! (I'm nerveous errrrgh)
+        // for (var i=0;i<creaseParams.length;i++) {//allCreaseParams.length
+        //     var _creaseParams = creaseParams[i];//face1Ind, vert1Ind, face2Ind, ver2Ind, edgeInd, angle
+        //     console.log("Here is _creaseParams[", i, "]: ", _creaseParams, "CHANGE TO GLUES");
+        //     var type = _creaseParams[5]!=0 ? 1:0;
+        //     //edge, face1Index, face2Index, targetTheta, type, node1, node2, index
+        //     creases.push(new Glue(
+        //         edges[_creaseParams[4]],
+        //         _creaseParams[0],
+        //         _creaseParams[2],
+        //         _creaseParams[5] * Math.PI / 180,  // convert back to radians for the GPU math
+        //         type,
+        //         nodes[_creaseParams[1]],
+        //         nodes[_creaseParams[3]],
+        //         creases.length));
+        // }
+
+
+
+
 
         vertices = [];
         for (var i=0;i<nodes.length;i++){
@@ -314,7 +372,8 @@ function initModel(globals){
             M: [],
             B: [],
             F: [],
-            C: []
+            C: [],
+            G: []
         };
         for (var i=0;i<fold.edges_assignment.length;i++){
             var edge = fold.edges_vertices[i];
@@ -322,6 +381,8 @@ function initModel(globals){
             lineIndices[assignment].push(edge[0]);
             lineIndices[assignment].push(edge[1]);
         }
+
+
         _.each(lines, function(line, key){
             var indicesArray = lineIndices[key];
             var indices = new Uint16Array(indicesArray.length);
@@ -364,7 +425,7 @@ function initModel(globals){
             nodes[i].setOriginalPosition(positions[3*i], positions[3*i+1], positions[3*i+2]);
         }
         for (var i=0;i<edges.length;i++){
-            edges[i].recalcOriginalLength();
+            edges[i].recalcOriginalLength(_assignments[i]);
         }
 
         updateEdgeVisibility();
@@ -397,6 +458,10 @@ function initModel(globals){
         return creases;
     }
 
+    function getGlues(){
+        return glues;
+    }
+
     function getDimensions(){
         geometry.computeBoundingBox();
         return geometry.boundingBox.max.clone().sub(geometry.boundingBox.min);
@@ -412,6 +477,7 @@ function initModel(globals){
         getEdges: getEdges,
         getFaces: getFaces,
         getCreases: getCreases,
+        getGlues: getGlues,
         getGeometry: getGeometry,//for save stl
         getPositionsArray: getPositionsArray,
         getColorsArray: getColorsArray,

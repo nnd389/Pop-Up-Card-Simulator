@@ -258,6 +258,10 @@ filter.cutEdges = function(fold) {
   return filter.edgesAssigned(fold, 'C');
 };
 
+filter.glueEdges = function(fold) {
+  return filter.edgesAssigned(fold, 'G');
+};
+
 filter.keysStartingWith = function(fold, prefix) {
   var key, results;
   results = [];

@@ -5,9 +5,29 @@
 // var beamMaterialHighlight = new THREE.LineBasicMaterial({color: 0xff0000, linewidth: 1});
 // var beamMaterial = new THREE.LineBasicMaterial({color: 0x000000, linewidth: 1});
 
-function Beam(nodes){
+function Beam(nodes, edge_assignment){
 
-    this.type = "beam";
+    if (edge_assignment == "G"){
+        this.type = "glue tab beam";
+    } else if (edge_assignment == "GS"){
+        this.type = "glue spring beam"
+    } else if (edge_assignment == "B"){
+        this.type = "boundary beam"
+    } else if (edge_assignment == "M"){
+        this.type = "mountain beam"
+    } else if (edge_assignment == "V"){
+        this.type = "valley beam"
+    } else if (edge_assignment == "F"){
+        this.type = "facet beam"
+    } else if (edge_assignment == "C"){
+        this.type = "cut beam"
+    } else if (edge_assignment == "U"){
+        this.type = "hinge beam"
+    }
+    else{
+        this.type = "regular beam";
+    }
+    
 
     nodes[0].addBeam(this);
     nodes[1].addBeam(this);
@@ -19,8 +39,8 @@ function Beam(nodes){
     // lineGeometry.vertices = this.vertices;
 
     // this.object3D = new THREE.Line(lineGeometry, beamMaterial);
-
-    this.originalLength = this.getLength();
+    this.originalLength = this.getLength(edge_assignment);
+    
 }
 
 // Beam.prototype.highlight = function(){
@@ -31,13 +51,23 @@ function Beam(nodes){
 //     this.object3D.material = beamMaterial;
 // };
 
-Beam.prototype.getLength = function(){
+Beam.prototype.getLength = function(assignment){
+    if (assignment == "glue spring beam"){
+        return 0.01;
+    } else{
+        return this.getVector().length();
+    }
     return this.getVector().length();
 };
 Beam.prototype.getOriginalLength = function(){
     return this.originalLength;
 };
-Beam.prototype.recalcOriginalLength = function(){
+Beam.prototype.recalcOriginalLength = function(edge_assignment){
+    // if (edge_assignment == "G"){
+    //     this.originalLength = 0.01;
+    // } else{
+    //     this.originalLength = this.getVector().length();
+    // }
     this.originalLength = this.getVector().length();
 };
 

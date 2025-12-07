@@ -240,7 +240,7 @@
             for (int j=0;j<100;j++){//for all beams (up to 100, had to put a const int in here)
                 if (j >= int(meta[1])) break;
 
-                vec4 beamMeta = getFromArray(meta[0]+float(j), u_textureDimEdges, u_beamMeta);
+                vec4 beamMeta = getFromArray(meta[0]+float(j), u_textureDimEdges, u_beamMeta); //beamMeta = [k,d,length,otherNodeIndex]
 
                 float neighborIndex1D = beamMeta[3];
                 vec2 neighborIndex = vec2(mod(neighborIndex1D, u_textureDim.x)+0.5, floor(neighborIndex1D/u_textureDim.x)+0.5);
@@ -938,7 +938,9 @@
                         <ul class="dropdown-menu">
                             <li><a href="#" class="demo author" data-author="miuraOri" data-url="Tessellations/miura-ori.svg">Miura-Ori</a></li>
                             <li><a href="#" class="demo author" data-author="miuraOri" data-url="Tessellations/miura_sharpangle.svg">Miura-Ori (sharp angle)</a></li>
-                            <li><a href="#" class="demo" data-url="Tessellations/waterbomb.svg">Waterbomb</a></li>
+                            <li><a href="#" class="demo author" data-author="Tessellations/waterbomb.svg">Waterbomb</a></li>
+                            <li><a href="#" class="demo" data-url="Tessellations/simple_cyan.svg">cyan</a></li>
+
                             <li><a href="#" class="demo author" data-author="whirlpool" data-url="Tessellations/whirlpool.svg">Whirlpool Spiral</a></li>
                             <li><a href="#" class="demo author" data-author="gardner" data-url="Tessellations/FTpoly7.svg">Flower Tower (flat foldable)</a></li>
                             <li><a href="#" class="demo author" data-author="fellerSmocked" data-url="Tessellations/HexTriFlatFoldableTess.svg">Hex/Tri Tessellation (flat foldable)</a></li>

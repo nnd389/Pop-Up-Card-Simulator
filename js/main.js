@@ -66,7 +66,9 @@ $(function() {
 
     // Load demo model: waterbomb unless model specified in URL via ?model=FILE
     // where FILE is the data-url attribute of an <a class="demo">.
-    var model = 'Tessellations/huffmanWaterbomb.svg';
+    //var model = 'Tessellations/huffmanWaterbomb.svg';
+    var model = 'Tessellations/simple_cyan.svg';
+
     var match = /[\\?&]model=([^&#]*)/.exec(location.search);
     if (match) {
         model = match[1];
