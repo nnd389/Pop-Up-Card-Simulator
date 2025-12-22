@@ -76,7 +76,7 @@ function initModel(globals){
     var creases = [];
     var glues = [];
     var vertices = [];//indexed vertices array
-    var fold, creaseParams, glueParams;
+    var fold, creaseParams, glueParams, glueDotParams;
 
     var nextCreaseParams, nextFold, nextGlueParams;//todo only nextFold, nextCreases?
 
@@ -197,7 +197,7 @@ function initModel(globals){
 
 
 
-    function buildModel(fold, creaseParams, glueParams){
+    function buildModel(fold, creaseParams, glueParams, glueDotParams){
 
         if (fold.vertices_coords.length == 0) {
             globals.warn("No geometry found.");
@@ -215,6 +215,7 @@ function initModel(globals){
         nextFold = fold;
         nextCreaseParams = creaseParams;
         nextGlueParams = glueParams;
+        nextGlueDotParams = glueDotParams;
 
         globals.needsSync = true;
         globals.simNeedsSync = true;
@@ -253,6 +254,7 @@ function initModel(globals){
         glues = [];
         creaseParams = nextCreaseParams;
         glueParams = nextGlueParams;
+        glueDotParams = nextGlueDotParams;
         var _edges = fold.edges_vertices;
         var _assignments = fold.edges_assignment;
 
@@ -270,35 +272,31 @@ function initModel(globals){
         // _nodes[_faces[0][2]].setFixed(true);
 
         for (var i=0;i<_edges.length;i++) {
-            console.log("Here is i", i);
-            console.log("Here is _edges[i][0] ", _edges[i][0]);
-            console.log("Here is _edges[i][1] ", _edges[i][1]);
-            console.log("Here is _assignments[i] ", _assignments[i]);
-            console.log("Here's what we are feeding into the new beam: ", nodes[_edges[i][0]], nodes[_edges[i][1]], _assignments[i]);
-            
             let myNewBeam = new Beam([nodes[_edges[i][0]], nodes[_edges[i][1]]], _assignments[i]);
-            edges.push(myNewBeam);
-            
-            // this length is being normalized somewhere else in the code and I want to know where 
-            // for nina FIX        
+            edges.push(myNewBeam);   
         }
         
         // Now we are going to create the glue springs! (these are just a few extra beams)
         console.log("About to add glue springs, here is glue params: ", glueParams, glueParams.length);
         for (var i=0;i<glueParams.length;i++){
-            console.log("Check 1")
-            //FIX need to clean up glueParams so that there are now repeats, this is adding double the added amount
             let myNewBeam = new Beam([nodes[glueParams[i][0]], nodes[glueParams[i][1]]], "GS");
             let myNewBeam1 = new Beam([nodes[glueParams[i][2]], nodes[glueParams[i][3]]], "GS");
             edges.push(myNewBeam);
             edges.push(myNewBeam1);
+            //need to update fold data accordingly
+            //foldData.edges_assignment.push("GS")
         }
 
+        // now create glue springs for glue dots
+        console.log("About to add glue springs, here is glue dot params: ", glueDotParams, glueDotParams.length);
+        for (var i=0;i<glueDotParams.length;i++){
+            let myNewBeam = new Beam([nodes[glueDotParams[i][0]], nodes[glueDotParams[i][1]]], "GS");
+            edges.push(myNewBeam);
+        } // CONTINUE: glue dots aren't coming together
 
         
         for (var i=0;i<creaseParams.length;i++) {//allCreaseParams.length
             var _creaseParams = creaseParams[i];//face1Ind, vert1Ind, face2Ind, ver2Ind, edgeInd, angle
-            console.log("Here is _creaseParams[", i, "]: ", _creaseParams);
             var type = _creaseParams[5]!=0 ? 1:0;
             //edge, face1Index, face2Index, targetTheta, type, node1, node2, index
             creases.push(new Crease(
@@ -311,24 +309,6 @@ function initModel(globals){
                 nodes[_creaseParams[3]],
                 creases.length));
         }
-
-        // Adding in Glues! (I'm nerveous errrrgh)
-        // for (var i=0;i<creaseParams.length;i++) {//allCreaseParams.length
-        //     var _creaseParams = creaseParams[i];//face1Ind, vert1Ind, face2Ind, ver2Ind, edgeInd, angle
-        //     console.log("Here is _creaseParams[", i, "]: ", _creaseParams, "CHANGE TO GLUES");
-        //     var type = _creaseParams[5]!=0 ? 1:0;
-        //     //edge, face1Index, face2Index, targetTheta, type, node1, node2, index
-        //     creases.push(new Glue(
-        //         edges[_creaseParams[4]],
-        //         _creaseParams[0],
-        //         _creaseParams[2],
-        //         _creaseParams[5] * Math.PI / 180,  // convert back to radians for the GPU math
-        //         type,
-        //         nodes[_creaseParams[1]],
-        //         nodes[_creaseParams[3]],
-        //         creases.length));
-        // }
-
 
 
 
@@ -427,6 +407,10 @@ function initModel(globals){
         for (var i=0;i<edges.length;i++){
             edges[i].recalcOriginalLength(_assignments[i]);
         }
+        console.log("Here are edges: ", edges)
+        console.log("Here are vertices: ", vertices)
+        
+
 
         updateEdgeVisibility();
         updateMeshVisibility();

@@ -127,7 +127,7 @@ function initDynamicSolver(globals){
         }
         render();
     }
-
+    // this is the heart of the solver
     function solveStep(){
 
         var gpuMath = globals.gpuMath;
@@ -154,6 +154,7 @@ function initDynamicSolver(globals){
             gpuMath.step("velocityCalcVerlet", ["u_position", "u_lastPosition", "u_mass"], "u_velocity");
             gpuMath.swapTextures("u_lastPosition", "u_lastLastPosition");
         } else {//euler
+            //console.log("check")
             gpuMath.setProgram("velocityCalc");
             gpuMath.setSize(textureDim, textureDim);
             gpuMath.step("velocityCalc", ["u_lastPosition", "u_lastVelocity", "u_originalPosition", "u_externalForces",
@@ -436,10 +437,10 @@ function initDynamicSolver(globals){
                 index+=1;
             }
         }
-        // for nina
+        // //for nina
         // === Pretty printing for debugging ===
 
-        // --- Print beamMeta ---
+        // //--- Print beamMeta ---
         // console.group("BeamMeta (per-beam parameters)");
 
         // for (let b = 0; b < index; b++) {
@@ -470,9 +471,9 @@ function initDynamicSolver(globals){
         //         `Node ${n}: beamStartIndex=${start}, numBeams=${count}`
         //     );
         // }
-        console.log("Nodes", nodes);
-        console.log("Edges", edges);
-        console.log("Creases", creases);
+        // console.log("Nodes", nodes);
+        // console.log("Edges", edges);
+        // console.log("Creases", creases);
 
         // console.groupEnd();
 

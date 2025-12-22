@@ -53,7 +53,7 @@ function Beam(nodes, edge_assignment){
 
 Beam.prototype.getLength = function(assignment){
     if (assignment == "glue spring beam"){
-        return 0.01;
+        return 0.0;
     } else{
         return this.getVector().length();
     }
@@ -63,12 +63,12 @@ Beam.prototype.getOriginalLength = function(){
     return this.originalLength;
 };
 Beam.prototype.recalcOriginalLength = function(edge_assignment){
-    // if (edge_assignment == "G"){
-    //     this.originalLength = 0.01;
-    // } else{
-    //     this.originalLength = this.getVector().length();
-    // }
-    this.originalLength = this.getVector().length();
+    if (edge_assignment == undefined){
+        this.originalLength = 0.0;
+    } else{
+        this.originalLength = this.getVector().length();
+    }
+    //this.originalLength = this.getVector().length();
 };
 
 Beam.prototype.isFixed = function(){

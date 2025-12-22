@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="300px"
+   version="1.1"
+   width="300px"
+   id="svg69275"
+   sodipodi:docname="simple_cyan4.svg"
+   inkscape:version="1.2.2 (b0a8486, 2022-12-01)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview69277"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="false"
+     inkscape:zoom="0.78666667"
+     inkscape:cx="151.90678"
+     inkscape:cy="153.17797"
+     inkscape:window-width="1025"
+     inkscape:window-height="713"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg69275" />
+  <defs
+     id="defs69239" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="100"
+     y1="0"
+     y2="0"
+     id="line69241" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="100"
+     x2="100"
+     y1="0"
+     y2="100"
+     id="line69243" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="100"
+     x2="0"
+     y1="100"
+     y2="100"
+     id="line69245" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="0"
+     y1="100"
+     y2="0"
+     id="line69247" />
+  <line
+     stroke="blue"
+     stroke-width="2"
+     x1="50"
+     x2="50"
+     y1="0"
+     y2="100"
+     id="line69249" />
+  <line
+     stroke="rgb(0,155,255)"
+     stroke-width="2"
+     x1="50"
+     x2="100"
+     y1="0"
+     y2="50"
+     id="line69251" />
+  <line
+     stroke="rgb(0,255,255)"
+     stroke-width="2"
+     x1="50"
+     x2="0"
+     y1="0"
+     y2="50"
+     id="line69253" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="140"
+     y1="200"
+     y2="200"
+     id="line69255" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="140"
+     x2="140"
+     y1="200"
+     y2="250"
+     id="line69257" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="0"
+     y1="200"
+     y2="250"
+     id="line69259" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="35"
+     y1="250"
+     y2="300"
+     id="line69261" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="35"
+     x2="70"
+     y1="300"
+     y2="250"
+     id="line69263" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="70"
+     x2="105"
+     y1="250"
+     y2="300"
+     id="line69265" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="105"
+     x2="140"
+     y1="300"
+     y2="250"
+     id="line69267" />
+  <line
+     stroke="blue"
+     stroke-width="2"
+     x1="70"
+     x2="70"
+     y1="200"
+     y2="250"
+     id="line69269"
+     style="stroke:#ff00ff;stroke-opacity:1" />
+  <line
+     stroke="rgb(0,255,255)"
+     stroke-width="2"
+     x1="0"
+     x2="70"
+     y1="250"
+     y2="250"
+     id="line69271" />
+  <line
+     stroke="rgb(0,155,255)"
+     stroke-width="2"
+     x1="70"
+     x2="140"
+     y1="250"
+     y2="250"
+     id="line69273" />
+</svg>
