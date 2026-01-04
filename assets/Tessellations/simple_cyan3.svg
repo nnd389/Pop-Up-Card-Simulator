@@ -1,2 +1,87 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<svg baseProfile="full" height="300px" version="1.1" width="300px" xmlns="http://www.w3.org/2000/svg" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:xlink="http://www.w3.org/1999/xlink"><defs /><line stroke="black" stroke-width="2" x1="0" x2="100" y1="0" y2="0" /><line stroke="black" stroke-width="2" x1="100" x2="100" y1="0" y2="100" /><line stroke="black" stroke-width="2" x1="100" x2="0" y1="100" y2="100" /><line stroke="black" stroke-width="2" x1="0" x2="0" y1="100" y2="0" /><line stroke="blue" stroke-width="2" x1="50" x2="50" y1="0" y2="100" /></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="300px"
+   version="1.1"
+   width="300px"
+   id="svg89446"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs89402" />
+  <line
+     stroke="#000000"
+     stroke-width="2"
+     x1="0"
+     x2="69.801834"
+     y1="200"
+     y2="200"
+     id="line89418" />
+  <line
+     stroke="#000000"
+     stroke-width="2"
+     x1="69.801834"
+     x2="69.801834"
+     y1="200.75078"
+     y2="250.75078"
+     id="line89420" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="0"
+     y1="200"
+     y2="250"
+     id="line89422" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="35"
+     y1="250"
+     y2="300"
+     id="line89424" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="35"
+     x2="70"
+     y1="300"
+     y2="250"
+     id="line89426" />
+  <line
+     stroke="rgb(0,255,255)"
+     stroke-width="2"
+     x1="0"
+     x2="70"
+     y1="250"
+     y2="250"
+     id="line89434" />
+  <line
+     stroke="#0064ff"
+     stroke-width="2"
+     x1="55.936245"
+     x2="13.509872"
+     y1="269.48096"
+     y2="269.42096"
+     id="line89442-1" />
+  <path
+     style="fill:none;stroke:#000000;stroke-width:0.702415px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 2.3580506,1.5481436 V 103.02476 H 53.045352 V 1.5481436 Z"
+     id="path1" />
+  <path
+     style="fill:none;stroke:#00ffff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 52.655662,2.0054174 2.8528117,50.560292"
+     id="path3" />
+  <path
+     style="fill:none;stroke:#0064ff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 44.547492,34.852219 14.960162,64.921954"
+     id="path6" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 44.508335,34.94257 8.183757,15.42464"
+     id="path7-4-8" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 14.982742,64.976007 2.7972317,50.625009"
+     id="path7-4-4" />
+</svg>

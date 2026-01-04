@@ -11,7 +11,7 @@ function initPattern(globals){
 
     function clearFold(){
         foldData.vertices_coords = [];
-        foldData.vertices_assignments = [];
+        foldData.v1ertices_assignments = [];
         foldData.edges_vertices = [];
         foldData.edges_assignment = [];//B = boundary, M = mountain, V = valley, C = cut, F = facet, U = hinge, G = glue
         foldData.edges_greenVal = []; // for determining glue matches, this is the g color value (integer) in rbg
@@ -23,7 +23,7 @@ function initPattern(globals){
     }
 
     var verticesRaw = [];
-    var verticesAssignmentsRaw = [];
+    var v1erticesAssignmentsRaw = [];
     //refs to vertex indices
     var mountainsRaw = [];
     var valleysRaw = [];
@@ -42,12 +42,13 @@ function initPattern(globals){
 
     var badColors = [];//store any bad colors in svg file to show user
     var greenVals = [];
+    var circleParams = [];
 
     function clearAll(){
 
         clearFold();
         verticesRaw = [];
-        verticesAssignmentsRaw = [];
+        v1erticesAssignmentsRaw = [];
 
         mountainsRaw = [];
         valleysRaw = [];
@@ -66,6 +67,7 @@ function initPattern(globals){
 
         badColors = [];
         greenVals = [];
+        circleParams = [];
     }
 
     clearAll();
@@ -199,6 +201,7 @@ function initPattern(globals){
         if (assignment == "F") return "#ff0";//facet
         if (assignment == "U") return "#f0f";//hinge
         if (assignment == "G") return "#0ff";//glue tab
+        if (assignment == "GS") return "#9900ffff";//glue spring
     
         //return "#0ff"
     }
@@ -207,13 +210,12 @@ function initPattern(globals){
         return Math.abs(angle)/180;
     }
 
-    function findType(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, filter, $paths, $lines, $rects, $polygons, $polylines, $circles){
-        parsePath(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $paths.filter(filter));
-        parseLine(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $lines.filter(filter));
-        parseRect(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $rects.filter(filter));
-        parsePolygon(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $polygons.filter(filter));
-        parsePolyline(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $polylines.filter(filter));
-        parseCircle(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $circles); // curved folding has parse ellipse as well
+    function findType(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, filter, $paths, $lines, $rects, $polygons, $polylines, $circles){
+        parsePath(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $paths.filter(filter));
+        parseLine(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $lines.filter(filter));
+        parseRect(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $rects.filter(filter));
+        parsePolygon(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $polygons.filter(filter));
+        parsePolyline(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $polylines.filter(filter));
     }
 
     // function parseRGB(rgbString) {
@@ -228,22 +230,36 @@ function initPattern(globals){
     //     };
     // }
 
-    function parseCircle(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $elements) {
+    function getCircleParams(_verticesRaw, _v1erticesAssignmentsRaw, $elements) {
+        var _circleParams = [] // [cx, cy, radius, g]
         for (var i=0;i<$elements.length;i++){
             var element = $elements[i];
 
-            const cx = element.cx.baseVal.value;
-            const cy = element.cy.baseVal.value;
+            //const cx = element.cx.baseVal.value; csometimes returns negative values??
+            //const cy = element.cy.baseVal.value;
+            const pt = element.ownerSVGElement.createSVGPoint();
+            pt.x = element.cx.baseVal.value;
+            pt.y = element.cy.baseVal.value;
+
+            const screenPt = pt.matrixTransform(element.getCTM());
+
+            const cx = screenPt.x;
+            const cy = screenPt.y;
+
             const radius = element.r.baseVal.value;
             const fill = getComputedStyle(element).fill; // for some reason even when I have a filled circle this returns "none"
             const stroke = getComputedStyle(element).stroke; // stroke works!
             const [r, g, b] = stroke.match(/\d+/g).map(Number);
 
+            _circleParams.push([cx, cy, radius, g]);
+            console.log("We are insdie get Circle Params, (cx,cy): (", cx, ",", cy, ")")
+
             if (r==0 && b==255 && g>=1 && g<=255) {
                 _verticesRaw.push({x:cx, y:0, z:cy});
-                _verticesAssignmentsRaw.push(g)
+                _v1erticesAssignmentsRaw.push(g);
             }
         }
+        return _circleParams;
     }
 
 
@@ -264,7 +280,7 @@ function initPattern(globals){
         }
     }
 
-    function parsePath(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $elements){
+    function parsePath(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $elements){
         var strokes = $elements.map(function() {
             return getStroke($(this));
         }).get();
@@ -307,7 +323,7 @@ function initPattern(globals){
                         }
                         startVertex = _verticesRaw.length;
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -318,7 +334,7 @@ function initPattern(globals){
                         vertex.x += segment.values[0];
                         vertex.z += segment.values[1];
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -328,7 +344,7 @@ function initPattern(globals){
                         var vertex = _verticesRaw[_verticesRaw.length-1].clone();
                         vertex.z += segment.values[0];
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -338,7 +354,7 @@ function initPattern(globals){
                         var vertex = _verticesRaw[_verticesRaw.length-1].clone();
                         vertex.x += segment.values[0];
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -346,7 +362,7 @@ function initPattern(globals){
                         var vertex = new THREE.Vector3(segment.values[0], 0, segment.values[1]);
                         startVertex = _verticesRaw.length;
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -355,7 +371,7 @@ function initPattern(globals){
                         if (path.targetAngle && _segmentsRaw.length>0) _segmentsRaw[_segmentsRaw.length-1].push(path.targetAngle);
                         var vertex = new THREE.Vector3(segment.values[0], 0, segment.values[1]);
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -365,7 +381,7 @@ function initPattern(globals){
                         var vertex = _verticesRaw[_verticesRaw.length-1].clone();
                         vertex.z = segment.values[0];
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -375,7 +391,7 @@ function initPattern(globals){
                         var vertex = _verticesRaw[_verticesRaw.length-1].clone();
                         vertex.x = segment.values[0];
                         _verticesRaw.push(vertex);
-                        _verticesAssignmentsRaw.push(null);
+                        _v1erticesAssignmentsRaw.push(null);
                         pathVertices.push(vertex);
                         break;
 
@@ -395,7 +411,7 @@ function initPattern(globals){
     }
 
 
-    function parseLine(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $elements){
+    function parseLine(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $elements){
         var strokes = $elements.map(function() {
             return getStroke($(this));
         }).get();// still a bit confused on how to call getstroke properly
@@ -404,8 +420,8 @@ function initPattern(globals){
             var element = $elements[i];
             _verticesRaw.push(new THREE.Vector3(element.x1.baseVal.value, 0, element.y1.baseVal.value));
             _verticesRaw.push(new THREE.Vector3(element.x2.baseVal.value, 0, element.y2.baseVal.value));
-            _verticesAssignmentsRaw.push(null);
-            _verticesAssignmentsRaw.push(null);
+            _v1erticesAssignmentsRaw.push(null);
+            _v1erticesAssignmentsRaw.push(null);
             _segmentsRaw.push([_verticesRaw.length-2, _verticesRaw.length-1, stroke]);
             if (element.targetAngle) _segmentsRaw[_segmentsRaw.length-1].push(element.targetAngle);
             applyTransformation(_verticesRaw[_verticesRaw.length-2], element);
@@ -413,7 +429,7 @@ function initPattern(globals){
         }
     }
 
-    function parseRect(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $elements){
+    function parseRect(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $elements){
         var strokes = $elements.map(function() {
             return getStroke($(this));
         }).get();
@@ -428,10 +444,10 @@ function initPattern(globals){
             _verticesRaw.push(new THREE.Vector3(x+width, 0, y));
             _verticesRaw.push(new THREE.Vector3(x+width, 0, y+height));
             _verticesRaw.push(new THREE.Vector3(x, 0, y+height));
-            _verticesAssignmentsRaw.push(null);
-            _verticesAssignmentsRaw.push(null);
-            _verticesAssignmentsRaw.push(null);
-            _verticesAssignmentsRaw.push(null);
+            _v1erticesAssignmentsRaw.push(null);
+            _v1erticesAssignmentsRaw.push(null);
+            _v1erticesAssignmentsRaw.push(null);
+            _v1erticesAssignmentsRaw.push(null);
             _segmentsRaw.push([_verticesRaw.length-4, _verticesRaw.length-3, stroke]);
             _segmentsRaw.push([_verticesRaw.length-3, _verticesRaw.length-2, stroke]);
             _segmentsRaw.push([_verticesRaw.length-2, _verticesRaw.length-1, stroke]);
@@ -443,7 +459,7 @@ function initPattern(globals){
         }
     }
 
-    function parsePolygon(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $elements){
+    function parsePolygon(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $elements){
         var strokes = $elements.map(function() {
             return getStroke($(this));
         }).get();
@@ -452,7 +468,7 @@ function initPattern(globals){
             var element = $elements[i];
             for (var j=0;j<element.points.length;j++){
                 _verticesRaw.push(new THREE.Vector3(element.points[j].x, 0, element.points[j].y));
-                _verticesAssignmentsRaw.push(null);
+                _v1erticesAssignmentsRaw.push(null);
                 applyTransformation(_verticesRaw[_verticesRaw.length-1], element);
 
                 if (j<element.points.length-1) _segmentsRaw.push([_verticesRaw.length-1, _verticesRaw.length, stroke]); // hopefully adding stroke here doesn't cause issues...
@@ -463,7 +479,7 @@ function initPattern(globals){
         }
     }
 
-    function parsePolyline(_verticesRaw, _verticesAssignmentsRaw, _segmentsRaw, $elements){
+    function parsePolyline(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $elements){
         var strokes = $elements.map(function() {
             return getStroke($(this));
         }).get();
@@ -472,7 +488,7 @@ function initPattern(globals){
             var element = $elements[i];
             for (var j=0;j<element.points.length;j++){
                 _verticesRaw.push(new THREE.Vector3(element.points[j].x, 0, element.points[j].y));
-                _verticesAssignmentsRaw.push(null);
+                _v1erticesAssignmentsRaw.push(null);
                 applyTransformation(_verticesRaw[_verticesRaw.length-1], element);
                 if (j>0) {
                     _segmentsRaw.push([_verticesRaw.length-1, _verticesRaw.length-2, stroke]); // hopefully adding stroke here doesn't cause issues, I don't fully understand these inner for loops
@@ -532,15 +548,18 @@ function initPattern(globals){
             $circles.css({ fill: "none", 'stroke-dasharray': "none" });
             console.log("Circle Info1:", $circles);
 
-            findType(verticesRaw, verticesAssignmentsRaw, bordersRaw, borderFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
-            findType(verticesRaw, verticesAssignmentsRaw, mountainsRaw, mountainFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
-            findType(verticesRaw, verticesAssignmentsRaw, valleysRaw, valleyFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
-            findType(verticesRaw, verticesAssignmentsRaw, cutsRaw, cutFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
-            findType(verticesRaw, verticesAssignmentsRaw, triangulationsRaw, triangulationFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
-            findType(verticesRaw, verticesAssignmentsRaw, hingesRaw, hingeFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
-            findType(verticesRaw, verticesAssignmentsRaw, gluesRaw, glueFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
-            console.log("Here is verticesRaw:", verticesRaw)
-            console.log("Here is verticesAssignmentsRaw: ", verticesAssignmentsRaw)
+            
+
+            findType(verticesRaw, v1erticesAssignmentsRaw, bordersRaw, borderFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, mountainsRaw, mountainFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, valleysRaw, valleyFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, cutsRaw, cutFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, triangulationsRaw, triangulationFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, hingesRaw, hingeFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, gluesRaw, glueFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+
+            circleParams = getCircleParams(verticesRaw, v1erticesAssignmentsRaw, $circles); // curved folding has parse ellipse as well
+            console.log("Here is circleParams: ", circleParams)
 
             if (badColors.length>0){
                 badColors = _.uniq(badColors);
@@ -557,7 +576,7 @@ function initPattern(globals){
             _$svg.remove();
 
             //todo revert back to old pattern if bad import
-            var success = parseSVG(verticesRaw, verticesAssignmentsRaw, bordersRaw, mountainsRaw, valleysRaw, cutsRaw, triangulationsRaw, hingesRaw, gluesRaw);
+            var success = parseSVG(verticesRaw, v1erticesAssignmentsRaw, bordersRaw, mountainsRaw, valleysRaw, cutsRaw, triangulationsRaw, hingesRaw, gluesRaw);
             if (!success) return;
             generateSvg();
         },
@@ -567,58 +586,116 @@ function initPattern(globals){
             console.warn(error);
         });
     }
-
+    // I changed this to read folddata instead because I was interested in seeing all the yellow facet lines, and adding glue spring lines
     function generateSvg() {
-            $("#svgViewer").empty();
-            //find max and min vertices
-            var max = new THREE.Vector3(-Infinity,-Infinity,-Infinity);
-            var min = new THREE.Vector3(Infinity,Infinity,Infinity);
+        $("#svgViewer").empty();
 
-            for (var i=0;i<rawFold.vertices_coords.length;i++){
-                var vertex = new THREE.Vector3(rawFold.vertices_coords[i][0], rawFold.vertices_coords[i][1], rawFold.vertices_coords[i][2]);
-                max.max(vertex);
-                min.min(vertex);
-            }
-            if (min.x === Infinity){
-                if (badColors.length == 0) globals.warn("no geometry found in file");
-                return;
-            }
-            max.sub(min);
-            var border = new THREE.Vector3(0.1, 0, 0.1);
-            var scale = Math.max(max.x, max.y, max.z);
-            if (scale == 0) return;
+        // find max and min vertices
+        var max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
+        var min = new THREE.Vector3(Infinity, Infinity, Infinity);
 
-            var isCreasePattern = (rawFold.frame_classes && rawFold.frame_classes.includes('creasePattern')) | max.y < scale / 100;
-            if (!isCreasePattern) {
-                console.log('Fold data is not a crease pattern, skipping SVG generation');
-                return; // TODO try to flatten the folded state if possible
-            }
+        for (var i = 0; i < foldData.vertices_coords.length; i++) {
+            var v = foldData.vertices_coords[i];
+            var vertex = new THREE.Vector3(v[0], v[1], v[2]);
+            max.max(vertex);
+            min.min(vertex);
+        }
 
-            var strokeWidth = scale/300;
-            border.multiplyScalar(scale);
-            min.sub(border);
-            max.add(border.multiplyScalar(2));
-            var viewBoxTxt = min.x + " " + min.z + " " + max.x + " " + max.z;
+        if (min.x === Infinity) {
+            if (badColors.length == 0) globals.warn("no geometry found in file");
+            return;
+        }
 
-            var ns = 'http://www.w3.org/2000/svg';
-            var svg = document.createElementNS(ns, 'svg');
-            svg.setAttribute('viewBox', viewBoxTxt);
-            for (var i=0;i<rawFold.edges_vertices.length;i++){
-                var line = document.createElementNS(ns, 'line');
-                var edge = rawFold.edges_vertices[i];
-                var vertex = rawFold.vertices_coords[edge[0]];
-                line.setAttribute('stroke', colorForAssignment(rawFold.edges_assignment[i]));
-                line.setAttribute('opacity', opacityForAngle(rawFold.edges_foldAngle[i], rawFold.edges_assignment[i]));
-                line.setAttribute('x1', vertex[0]);
-                line.setAttribute('y1', vertex[2]);
-                vertex = rawFold.vertices_coords[edge[1]];
-                line.setAttribute('x2', vertex[0]);
-                line.setAttribute('y2', vertex[2]);
-                line.setAttribute('stroke-width', strokeWidth);
-                svg.appendChild(line);
-            }
-            $("#svgViewer").html(svg);
+        max.sub(min);
+        var border = new THREE.Vector3(0.1, 0, 0.1);
+        var scale = Math.max(max.x, max.y, max.z);
+        if (scale == 0) return;
+
+        var isCreasePattern =
+            (foldData.frame_classes && foldData.frame_classes.includes('creasePattern')) ||
+            max.y < scale / 100;
+
+        if (!isCreasePattern) {
+            console.log('Fold data is not a crease pattern, skipping SVG generation');
+            return;
+        }
+
+        var strokeWidth = scale / 300;
+        border.multiplyScalar(scale);
+        min.sub(border);
+        max.add(border.multiplyScalar(2));
+
+        var viewBoxTxt = min.x + " " + min.z + " " + max.x + " " + max.z;
+
+        var ns = 'http://www.w3.org/2000/svg';
+        var svg = document.createElementNS(ns, 'svg');
+        svg.setAttribute('viewBox', viewBoxTxt);
+
+        foldClone = structuredClone(foldData);
+
+        // ---- draw edges ----
+        for (var i = 0; i < foldData.edges_vertices.length; i++) {
+            var line = document.createElementNS(ns, 'line');
+            var edge = foldData.edges_vertices[i];
+
+            var v1 = foldData.vertices_coords[edge[0]];
+            var v2 = foldData.vertices_coords[edge[1]];
+            
+            var strokeColor = colorForAssignment(foldData.edges_assignment[i]);
+            line.setAttribute('stroke', strokeColor);
+
+            // // make dashed if special color
+            // if (strokeColor === "#9900ffff") {
+            //     line.setAttribute('stroke-dasharray', "5,5");
+            // }
+
+            line.setAttribute('opacity', opacityForAngle(
+                foldData.edges_foldAngle[i],
+                foldData.edges_assignment[i]
+            ));
+
+            line.setAttribute('x1', v1[0]);
+            line.setAttribute('y1', v1[2]);
+            line.setAttribute('x2', v2[0]);
+            line.setAttribute('y2', v2[2]);
+            line.setAttribute('stroke-width', strokeWidth);
+
+            svg.appendChild(line);
+        }
+
+        // ---- draw vertex indices ----
+        var fontSize = scale / 40;   // tweak as needed
+        var textOffset = scale / 200;
+
+        for (var i = 0; i < foldData.vertices_coords.length; i++) {
+            var v = foldData.vertices_coords[i];
+
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
+
+            text.setAttribute('x', v[0] + textOffset);
+            text.setAttribute('y', v[2] - textOffset);
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', '#000');
+            text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
+
+            svg.appendChild(text);
+        }
+
+        $("#svgViewer").html(svg);
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     function cleanSegmentsRawForColor(segmentsRaw) {
         return segmentsRaw.map(seg => {
@@ -658,7 +735,7 @@ function initPattern(globals){
     }
 
 
-    function parseSVG(_verticesRaw, _verticesAssignmentsRaw, _bordersRaw, _mountainsRaw, _valleysRaw, _cutsRaw, _triangulationsRaw, _hingesRaw, _gluesRaw){
+    function parseSVG(_verticesRaw, _v1erticesAssignmentsRaw, _bordersRaw, _mountainsRaw, _valleysRaw, _cutsRaw, _triangulationsRaw, _hingesRaw, _gluesRaw){
         // _segmentsRaw will have the form [node1, node2, color]
         // _valleysRaw and _mountainsRaw have the special form [node1, node2, color, targetAngle]
 
@@ -670,13 +747,11 @@ function initPattern(globals){
         _hingesRaw = cleanSegmentsRawForColor(_hingesRaw);
         _gluesRaw = cleanSegmentsRawForColor(_gluesRaw);
 
-        
-
         _.each(_verticesRaw, function(vertex){
             foldData.vertices_coords.push([vertex.x, vertex.z]);
         });
-        _.each(_verticesAssignmentsRaw, function(vertex){ 
-            foldData.vertices_assignments.push(vertex);
+        _.each(_v1erticesAssignmentsRaw, function(vertex){ 
+            foldData.v1ertices_assignments.push(vertex);
         });
         _.each(_bordersRaw, function(edge){
             foldData.edges_vertices.push([edge[0], edge[1]]);
@@ -720,6 +795,10 @@ function initPattern(globals){
             foldData.edges_greenVal.push(edge[2]); // this is correct! just make sure that segments raw looks nice before this
             foldData.edges_foldAngle.push(null);
         });
+        
+
+
+
 
         if (foldData.vertices_coords.length == 0 || foldData.edges_vertices.length == 0){
             globals.warn("No valid geometry found in SVG, be sure to ungroup all and remove all clipping masks.");
@@ -729,7 +808,7 @@ function initPattern(globals){
         foldData = FOLD.filter.collapseNearbyVertices(foldData, globals.vertTol);
         foldData = FOLD.filter.removeLoopEdges(foldData);//remove edges that points to same vertex
         foldData = FOLD.filter.removeDuplicateEdges_vertices(foldData);//remove duplicate edges
-
+        
         // foldData = FOLD.filter.subdivideCrossingEdges_vertices(foldData, globals.vertTol);//find intersections and add vertices/edges
 
         foldData = findIntersections(foldData, globals.vertTol); // FIX? this one specifically is splitting up the intersections
@@ -738,10 +817,10 @@ function initPattern(globals){
         foldData = FOLD.filter.removeLoopEdges(foldData);//remove edges that points to same vertex
         foldData = FOLD.filter.removeDuplicateEdges_vertices(foldData);//remove duplicate edges
 
+
         foldData = FOLD.convert.edges_vertices_to_vertices_vertices_unsorted(foldData);
         foldData = removeStrayVertices(foldData);//delete stray anchors
         foldData = removeRedundantVertices(foldData, 0.01);//remove vertices that split edge
-        // FIX uncomment above line
 
         foldData.vertices_vertices = FOLD.convert.sort_vertices_vertices(foldData);
         foldData = FOLD.convert.vertices_vertices_to_faces_vertices(foldData);
@@ -751,8 +830,16 @@ function initPattern(globals){
 
         foldData = reverseFaceOrder(foldData);//set faces to counter clockwise
 
+        foldData = addGlueSprings(foldData); // add glue springs to folddata!
+        // FIX: CONTINUE HERE: add GLue springs is adding things incorrectly somehow - there are lines crossing!!
+        foldClone = structuredClone(foldData);
+        console.log("Here is foldClone after adding Glue Springs: ", foldClone)
+
+
         return processFold(foldData);
     }
+
+
 
     function processFold(fold, returnCreaseParams, returnGlueParams, returnGlueDotParams){
 
@@ -780,11 +867,9 @@ function initPattern(globals){
             // FIX uncomment above line
         }
         delete fold.vertices_vertices;
-        delete fold.vertices_edges;
+        delete fold.vertices_edges;  
 
-        console.log("Check 3: Here is FOLD DATA: ", foldData, foldData.edges_greenVal.length); 
         foldData = triangulatePolys(fold, is2d);
-        console.log("Check 4: Here is FOLD DATA: ", foldData, foldData.edges_greenVal.length); 
 
         mountains = FOLD.filter.mountainEdges(foldData);
         valleys = FOLD.filter.valleyEdges(foldData);
@@ -811,6 +896,7 @@ function initPattern(globals){
         if (returnGlueDotParams) return allGlueDotParams;
 
         globals.model.buildModel(foldData, allCreaseParams, allGlueParams, allGlueDotParams);
+
         return foldData;
     }
 
@@ -818,6 +904,161 @@ function initPattern(globals){
         for (var i=0;i<fold.faces_vertices.length;i++){
             fold.faces_vertices[i].reverse();
         }
+        return fold;
+    }
+
+    function addGlueSprings(fold){ // FIX: this is copied from getFacesAndVerticesForEdges - need to delete glueparams stuff there
+        // I'm adding glue edges to foldata instead of glueparams, delete glueparams
+        
+        foldClone = structuredClone(fold);
+        console.log("Check 1: here is foldClone before adding any glue springs: ", foldClone)
+        const originalEdgesLength = fold.edges_vertices.length; // hopefully this fixes any length changing issues
+        var dim = fold.vertices_coords[0].length;
+
+        for (var i=0;i<originalEdgesLength;i++){ // loop through all the edges, on edge i
+            var assignmentI = fold.edges_assignment[i];
+            var greenValI = fold.edges_greenVal[i];
+            var edgeI = fold.edges_vertices[i];
+            
+
+            var x1 = fold.vertices_coords[edgeI[0]][0]; // this grabs the (x,y) coordinate the LEFT endpoint on edge I
+            var y1 = fold.vertices_coords[edgeI[0]][dim-1]; 
+            var x2 = fold.vertices_coords[edgeI[1]][0]; // this grabs the (x,y) coordinate the RIGHT endpoint on edge I (by left and right I mean edgeI[0] and edgeI[1])
+            var y2 = fold.vertices_coords[edgeI[1]][dim-1]; 
+
+            
+            if (assignmentI == "G"){
+                //FIX: need to fix directional issue later
+                 var vTopInd = edgeI[0];
+                 var vBottomInd = edgeI[1];
+                 for (var j=0;j<originalEdgesLength;j++){ // loop through edges again, match edge i (outer loop) to edge j (this loop)
+                    //FIX: I am ectively changing the length of fold.egdes_vertices.length, might want to change this
+                    var edgeJ = fold.edges_vertices[j];
+                    var vTopIndMatch = edgeJ[0];
+                    var vBottomIndMatch = edgeJ[1];
+
+
+                    // Temporary fix: make it so that glue springs don't cross, doesn't work for collinear glue tabs
+                    var u1 = fold.vertices_coords[edgeJ[0]][0]; // this grabs the (x,y) coordinate the LEFT endpoint on edge J
+                    var v1 = fold.vertices_coords[edgeJ[0]][dim-1]; 
+                    var u2 = fold.vertices_coords[edgeJ[1]][0]; // this grabs the (x,y) coordinate the RIGHT endpoint on edge I (by left and right I mean edgeI[0] and edgeI[1])
+                    var v2 = fold.vertices_coords[edgeJ[1]][dim-1]; 
+                    
+                    var m1 = (y1-v1)/(x1-u1);
+                    var m2 = (y2-v2)/(x2-u2);
+                    //console.log("(x1,y1): (", x1, ",", y1, ")   (x2,y2): (", x2, ",", y2, ")")
+                    //console.log("(u1,v1): (", u1, ",", v1, ")   (u2,v2): (", u2, ",", v2, ")")
+                    
+                    var b1 = y1 - m1*x1;
+                    var b2 = y2 - m2*x2;
+
+                    // edge I has endpoints (x1, y1) and (x2, y2)
+                    // edge J has endpoints (u1, v1) and (u2, v2)
+
+                    var assignmentJ = fold.edges_assignment[j];
+                    var greenValJ = fold.edges_greenVal[j];
+
+                    if (assignmentJ=="G" && j!==i && greenValI==greenValJ){  
+                        //console.log("m1: ", m1, "m2: ", m2)                       
+                        if (m1 == Infinity){
+                            console.warn("Found a vertical glue tab, setting slope to 1000. ")
+                            m1 = 1000;
+                        } else if (m2 == Infinity){
+                            console.warn("Found a vertical glue tab, setting slope to 1000. ")
+                            m2 = 1000;
+                        }
+
+                        // glue params = [nodeTopIndMatch, nodeTopInd, nodeBotIndMatch, nodeBotInd, edgeInd]
+                        xInt = (b2-b1)/(m1-m2);
+                        yInt = m1*xInt + b1;
+
+                        xMin = Math.min(x1,x2,u1,u2);
+                        xMax = Math.max(x1,x2,u1,u2);
+                        yMin = Math.min(y1,y2,v1,v2);
+                        yMax = Math.max(y1,y2,v1,v2);
+
+                        //console.log("Testing a spring connecting vertices ", edgeI[1], " and ", edgeJ[0])
+                        //console.log("Testing a spring connecting vertices ", edgeI[0], " and ", edgeJ[1])
+                        //console.log("xMin: ", xMin, "xInt: ", xInt, "xMax: ", xMax)
+
+                        // IT TOOK ME LIKE 2 HOURS TO FIGURE OUT I NEEDED TO CHANGE THE || TO AN &&
+                        // I think it might still be off-- not sure yet but you might have to come back
+                        // I want this if statement to cover if the x intercept is inside the little quadrilateral box, but it's not necessarily a rectangle
+                        if ((xMin<xInt && xInt<xMax) && (yMin<yInt && yInt<yMax)){
+                            //FIX: delete duplicates
+                            fold.edges_assignment.push("GS");
+                            fold.edges_assignment.push("GS");
+
+                            fold.edges_foldAngle.push(null);
+                            fold.edges_foldAngle.push(null);
+
+                            fold.edges_greenVal.push(null);
+                            fold.edges_greenVal.push(null);
+
+                            fold.edges_vertices.push([vBottomIndMatch, vTopInd]);
+                            fold.edges_vertices.push([vTopIndMatch, vBottomInd]);                            
+
+                        } else{
+                            //FIX: delete duplicates
+                            fold.edges_assignment.push("GS");
+                            fold.edges_assignment.push("GS");
+
+                            fold.edges_foldAngle.push(null);
+                            fold.edges_foldAngle.push(null);
+
+                            fold.edges_greenVal.push(null);
+                            fold.edges_greenVal.push(null);
+
+                            fold.edges_vertices.push([vTopIndMatch, vTopInd]);
+                            fold.edges_vertices.push([vBottomIndMatch, vBottomInd]);  
+                        }
+                    }
+                }
+            }
+        }
+
+        var circleSpringParams = []
+
+        console.log("We are inside addGlue Springs, here is circle params: ", circleParams)
+        for (var i=0;i<fold.vertices_coords.length;i++){
+            var x = fold.vertices_coords[i][0];
+            var y = fold.vertices_coords[i][dim-1];
+
+            for (var j=0;j<circleParams.length;j++){
+                var cx = circleParams[j][0];
+                var cy = circleParams[j][1];
+                var rad = circleParams[j][2];
+                var g = circleParams[j][3];
+                
+                if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad){
+                    console.log("highlighted vertex with g value: ", g, "at vertex: ", i)
+                    circleSpringParams.push([i, g]);
+                }
+            }
+        }
+
+        console.log("Here is circle SPring Params: ", circleSpringParams)
+        for (var i=0;i<circleSpringParams.length;i++){
+            var gI = circleSpringParams[i][1];
+            var vertI = circleSpringParams[i][0];
+            for (var j=0;j<circleSpringParams.length;j++){
+                var gJ = circleSpringParams[j][1];
+                var vertJ = circleSpringParams[j][0];
+                if (gI==gJ && i!=j){
+                    console.log("we got a match!!")
+                    fold.edges_assignment.push("GS");
+                    fold.edges_foldAngle.push(null);
+                    fold.edges_greenVal.push(null);
+                    fold.edges_vertices.push([vertI,vertJ]); 
+                }
+            }
+
+        }
+
+
+
+        // need to comment out gluedotparams in model.js FIX
+
         return fold;
     }
 
@@ -873,7 +1114,7 @@ function initPattern(globals){
         return fold;
     }
 
-    // for cuts, vertices essentially belong to two different surfaces, so add vertex copies?
+    // for cuts, vertices essentially belong to two different surfaces, so add vertex copies
     function splitCuts(fold){
         fold = sortVerticesEdges(fold);
         fold = facesVerticesToVerticesFaces(fold);
@@ -936,7 +1177,7 @@ function initPattern(globals){
                 var currentVertex = fold.vertices_coords[i];
                 var vertIndex = fold.vertices_coords.length;
                 fold.vertices_coords.push(currentVertex.slice());//make a copy
-                fold.vertices_assignments.push(null);
+                fold.v1ertices_assignments.push(null);
                 var connectingIndices = [];
                 for (var k=0;k<groups[j].length;k++){//update edges_vertices
                     var edgeIndex = groups[j][k];
@@ -1155,14 +1396,13 @@ function initPattern(globals){
 
         // now fill in gluedotparams
         //var allGlueDotParams = []; //nodeIndMatch, nodeInd, greenval
-        for (var i=0;i<fold.vertices_assignments.length;i++){ // loop through all the vertices, vertex i
+        for (var i=0;i<fold.v1ertices_assignments.length;i++){ // loop through all the vertices, vertex i
             var glueDotParams = [];
-            var vertAssignmentI = fold.vertices_assignments[i];
-            for (var j=0;j<fold.vertices_assignments.length;j++){ // vertex j
-                var vertAssignmentJ = fold.vertices_assignments[j];
+            var vertAssignmentI = fold.v1ertices_assignments[i];
+            for (var j=0;j<fold.v1ertices_assignments.length;j++){ // vertex j
+                var vertAssignmentJ = fold.v1ertices_assignments[j];
 
                 if (vertAssignmentI==vertAssignmentJ && vertAssignmentI!=null && i!=j){
-                    console.log("We got a glue dot match!", i, j)
                     glueDotParams.push(j);
                     glueDotParams.push(i);
                     glueDotParams.push(vertAssignmentI);
@@ -1171,14 +1411,7 @@ function initPattern(globals){
 
             }
         }
-
-        console.log("Checking1: About to add glue springs to fold data, here is glueParams: ", allGlueParams)
-        console.log("Checking2: About to add glue springs to fold data, here is glueDotParams: ", allGlueDotParams)
        
-        
-        
-
-
         return {allCreaseParams, allGlueParams, allGlueDotParams, fold};
     }
 
@@ -1307,6 +1540,7 @@ function initPattern(globals){
         var edges = fold.edges_vertices;
         var foldAngles = fold.edges_foldAngle;
         var assignments = fold.edges_assignment;
+        var greenVals = fold.edges_greenVal;
         var triangulatedFaces = [];
         for (var i=0;i<faces.length;i++){
 
@@ -1329,12 +1563,14 @@ function initPattern(globals){
                     edges.push([face[1], face[3]]);
                     foldAngles.push(0);
                     assignments.push("F");
+                    greenVals.push(null);
                     triangulatedFaces.push([face[0], face[1], face[3]]);
                     triangulatedFaces.push([face[1], face[2], face[3]]);
                 } else {
                     edges.push([face[0], face[2]]);
                     foldAngles.push(0);
                     assignments.push("F");
+                    greenVals.push(null);
                     triangulatedFaces.push([face[0], face[1], face[2]]);
                     triangulatedFaces.push([face[0], face[2], face[3]]);
                 }
@@ -1434,16 +1670,19 @@ function initPattern(globals){
                         edges.push([tri[0], tri[1]]);
                         foldAngles.push(0);
                         assignments.push("F");
+                        greenVals.push(null);
                     } else if (k==1){
                         faceEdges.push(edges.length);
                         edges.push([tri[2], tri[1]]);
                         foldAngles.push(0);
                         assignments.push("F");
+                        greenVals.push(null);
                     } else if (k==2){
                         faceEdges.push(edges.length);
                         edges.push([tri[2], tri[0]]);
                         foldAngles.push(0);
                         assignments.push("F");
+                        greenVals.push(null);
                     }
                 }
 

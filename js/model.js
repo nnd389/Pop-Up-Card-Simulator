@@ -19,6 +19,7 @@ function initModel(globals){
     var facetLines = new THREE.LineSegments(null, lineMaterial);
     var borderLines = new THREE.LineSegments(null, lineMaterial);
     var glueTabLines = new THREE.LineSegments(null, lineMaterial);
+    var glueSpringLines = new THREE.LineSegments(null, lineMaterial);
 
     var lines = {
         U: hingeLines,
@@ -27,7 +28,8 @@ function initModel(globals){
         C: cutLines,
         F: facetLines,
         B: borderLines,
-        G: glueTabLines
+        G: glueTabLines, 
+        GS: glueSpringLines
     };
 
     clearGeometries();
@@ -136,6 +138,7 @@ function initModel(globals){
         borderLines.visible = globals.edgesVisible && globals.boundaryEdgesVisible;
         cutLines.visible = false;
         glueTabLines.visible = globals.edgesVisible && globals.passiveEdgesVisible;
+        glueSpringLines.visible = globals.edgesVisible && globals.passiveEdgesVisible;
 
     }
 
@@ -275,24 +278,23 @@ function initModel(globals){
             let myNewBeam = new Beam([nodes[_edges[i][0]], nodes[_edges[i][1]]], _assignments[i]);
             edges.push(myNewBeam);   
         }
-        
+        console.log("Here are glueparams: ", glueParams);
+        console.log("Here are glueDotParams: ", glueDotParams)
         // Now we are going to create the glue springs! (these are just a few extra beams)
-        console.log("About to add glue springs, here is glue params: ", glueParams, glueParams.length);
-        for (var i=0;i<glueParams.length;i++){
-            let myNewBeam = new Beam([nodes[glueParams[i][0]], nodes[glueParams[i][1]]], "GS");
-            let myNewBeam1 = new Beam([nodes[glueParams[i][2]], nodes[glueParams[i][3]]], "GS");
-            edges.push(myNewBeam);
-            edges.push(myNewBeam1);
-            //need to update fold data accordingly
-            //foldData.edges_assignment.push("GS")
-        }
+        // for (var i=0;i<glueParams.length;i++){
+        //     let myNewBeam = new Beam([nodes[glueParams[i][0]], nodes[glueParams[i][1]]], "GS");
+        //     let myNewBeam1 = new Beam([nodes[glueParams[i][2]], nodes[glueParams[i][3]]], "GS");
+        //     edges.push(myNewBeam);
+        //     edges.push(myNewBeam1);
+        //     //need to update fold data accordingly
+        //     //foldData.edges_assignment.push("GS")
+        // }
 
         // now create glue springs for glue dots
-        console.log("About to add glue springs, here is glue dot params: ", glueDotParams, glueDotParams.length);
-        for (var i=0;i<glueDotParams.length;i++){
-            let myNewBeam = new Beam([nodes[glueDotParams[i][0]], nodes[glueDotParams[i][1]]], "GS");
-            edges.push(myNewBeam);
-        } // CONTINUE: glue dots aren't coming together
+        // for (var i=0;i<glueDotParams.length;i++){
+        //     let myNewBeam = new Beam([nodes[glueDotParams[i][0]], nodes[glueDotParams[i][1]]], "GS");
+        //     edges.push(myNewBeam);
+        // } // CONTINUE: glue dots aren't coming together
 
         
         for (var i=0;i<creaseParams.length;i++) {//allCreaseParams.length
@@ -353,7 +355,8 @@ function initModel(globals){
             B: [],
             F: [],
             C: [],
-            G: []
+            G: [], 
+            GS: []
         };
         for (var i=0;i<fold.edges_assignment.length;i++){
             var edge = fold.edges_vertices[i];
@@ -407,10 +410,7 @@ function initModel(globals){
         for (var i=0;i<edges.length;i++){
             edges[i].recalcOriginalLength(_assignments[i]);
         }
-        console.log("Here are edges: ", edges)
-        console.log("Here are vertices: ", vertices)
         
-
 
         updateEdgeVisibility();
         updateMeshVisibility();
