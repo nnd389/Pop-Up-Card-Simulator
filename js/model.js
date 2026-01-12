@@ -14,7 +14,9 @@ function initModel(globals){
     var lineMaterial = new THREE.LineBasicMaterial({color: 0x000000, linewidth: 1});
     var hingeLines = new THREE.LineSegments(null, lineMaterial);
     var mountainLines = new THREE.LineSegments(null, lineMaterial);
+    var preMountainLines = new THREE.LineSegments(null, lineMaterial);
     var valleyLines = new THREE.LineSegments(null, lineMaterial);
+    var preValleyLines = new THREE.LineSegments(null, lineMaterial);
     var cutLines = new THREE.LineSegments(null, lineMaterial);
     var facetLines = new THREE.LineSegments(null, lineMaterial);
     var borderLines = new THREE.LineSegments(null, lineMaterial);
@@ -24,7 +26,9 @@ function initModel(globals){
     var lines = {
         U: hingeLines,
         M: mountainLines,
+        PM: preMountainLines,
         V: valleyLines,
+        PV: preValleyLines,
         C: cutLines,
         F: facetLines,
         B: borderLines,
@@ -132,7 +136,9 @@ function initModel(globals){
 
     function updateEdgeVisibility(){
         mountainLines.visible = globals.edgesVisible && globals.mtnsVisible;
-        valleyLines.visible = globals.edgesVisible && globals.valleysVisible;
+        preMountainLines.visible = globals.edgesVisible && globals.preMtnsVisible;
+        valleyLines.visible = globals.edgesVisible && globals.preValleysVisible;
+        preValleyLines.visible = globals.edgesVisible && globals.valleysVisible;
         facetLines.visible = globals.edgesVisible && globals.panelsVisible;
         hingeLines.visible = globals.edgesVisible && globals.passiveEdgesVisible;
         borderLines.visible = globals.edgesVisible && globals.boundaryEdgesVisible;
@@ -278,8 +284,10 @@ function initModel(globals){
             let myNewBeam = new Beam([nodes[_edges[i][0]], nodes[_edges[i][1]]], _assignments[i]);
             edges.push(myNewBeam);   
         }
-        console.log("Here are glueparams: ", glueParams);
-        console.log("Here are glueDotParams: ", glueDotParams)
+        //console.log("Here are glueparams: ", glueParams);
+        //console.log("Here are glueDotParams: ", glueDotParams)
+        console.log("Here are edges: ", edges)
+
         // Now we are going to create the glue springs! (these are just a few extra beams)
         // for (var i=0;i<glueParams.length;i++){
         //     let myNewBeam = new Beam([nodes[glueParams[i][0]], nodes[glueParams[i][1]]], "GS");
@@ -301,18 +309,30 @@ function initModel(globals){
             var _creaseParams = creaseParams[i];//face1Ind, vert1Ind, face2Ind, ver2Ind, edgeInd, angle
             var type = _creaseParams[5]!=0 ? 1:0;
             //edge, face1Index, face2Index, targetTheta, type, node1, node2, index
-            creases.push(new Crease(
-                edges[_creaseParams[4]],
-                _creaseParams[0],
-                _creaseParams[2],
-                _creaseParams[5] * Math.PI / 180,  // convert back to radians for the GPU math
-                type,
-                nodes[_creaseParams[1]],
-                nodes[_creaseParams[3]],
-                creases.length));
+
+            if (i==0){ // this is eggergiously wrong - delete later
+                creases.push(new Crease(
+                    edges[_creaseParams[4]],
+                    _creaseParams[0],
+                    _creaseParams[2],
+                    _creaseParams[5] * Math.PI / 180,  // convert back to radians for the GPU math
+                    type,
+                    nodes[_creaseParams[1]],
+                    nodes[_creaseParams[3]],
+                    creases.length));
+
+            }else{
+                creases.push(new Crease(
+                    edges[_creaseParams[4]],
+                    _creaseParams[0],
+                    _creaseParams[2],
+                    _creaseParams[5] * Math.PI / 180,  // convert back to radians for the GPU math
+                    type,
+                    nodes[_creaseParams[1]],
+                    nodes[_creaseParams[3]],
+                    creases.length));
+            }
         }
-
-
 
 
         vertices = [];
@@ -351,7 +371,9 @@ function initModel(globals){
         var lineIndices = {
             U: [],
             V: [],
+            PV: [],
             M: [],
+            PM: [],
             B: [],
             F: [],
             C: [],

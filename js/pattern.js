@@ -13,7 +13,7 @@ function initPattern(globals){
         foldData.vertices_coords = [];
         foldData.v1ertices_assignments = [];
         foldData.edges_vertices = [];
-        foldData.edges_assignment = [];//B = boundary, M = mountain, V = valley, C = cut, F = facet, U = hinge, G = glue
+        foldData.edges_assignment = [];//B = boundary, M = mountain, PM = pre-mountain, V = valley, PV = pre-valley, C = cut, F = facet, U = hinge, G = glue
         foldData.edges_greenVal = []; // for determining glue matches, this is the g color value (integer) in rbg
         foldData.edges_foldAngle = [];//target angles
         delete foldData.vertices_vertices;
@@ -26,7 +26,9 @@ function initPattern(globals){
     var v1erticesAssignmentsRaw = [];
     //refs to vertex indices
     var mountainsRaw = [];
+    var preMountainsRaw = [];
     var valleysRaw = [];
+    var preValleysRaw = [];
     var bordersRaw = [];
     var cutsRaw = [];
     var triangulationsRaw = [];
@@ -34,7 +36,9 @@ function initPattern(globals){
     var gluesRaw = [];
 
     var mountains = [];
+    var preMountains = [];
     var valleys = [];
+    var preValleys = [];
     var borders = [];
     var hinges = [];
     var triangulations = [];
@@ -51,7 +55,9 @@ function initPattern(globals){
         v1erticesAssignmentsRaw = [];
 
         mountainsRaw = [];
+        preMountainsRaw = [];
         valleysRaw = [];
+        preValleysRaw = [];
         bordersRaw = [];
         cutsRaw = [];
         triangulationsRaw = [];
@@ -59,7 +65,9 @@ function initPattern(globals){
         gluesRaw = [];
 
         mountains = [];
+        preMountains = [];
         valleys = [];
+        preValleys = [];
         borders = [];
         hinges = [];
         triangulations = [];
@@ -89,6 +97,20 @@ function initPattern(globals){
         }
         return false;
     }
+    function preMountainFilter(){
+        var $this = $(this);
+        var stroke = getStroke($this);
+        if (typeForStroke(stroke) == "pre-creased mountain"){
+            var opacity = getOpacity($this);
+            this.targetAngle = -opacity*5;
+            return true;
+        }
+        return false;
+    }
+    // function preMountainFilter(){
+    //     var stroke = getStroke($(this));
+    //     return typeForStroke(stroke) == "pre-creased mountain";
+    // }
     function valleyFilter(){
         var $this = $(this);
         var stroke = getStroke($this);
@@ -99,6 +121,20 @@ function initPattern(globals){
         }
         return false;
     }
+    function preValleyFilter(){
+        var $this = $(this);
+        var stroke = getStroke($this);
+        if (typeForStroke(stroke) == "pre-creased valley"){
+            var opacity = getOpacity($this);
+            this.targetAngle = opacity*5;
+            return true;
+        }
+        return false;
+    }
+    // function preValleyFilter(){
+    //     var stroke = getStroke($(this));
+    //     return typeForStroke(stroke) == "pre-creased valley";
+    // }
     function cutFilter(){
         var stroke = getStroke($(this));
         return typeForStroke(stroke) == "cut";
@@ -153,7 +189,9 @@ function initPattern(globals){
     function typeForStroke(stroke){
         if (stroke == "#000000" || stroke == "#000" || stroke == "black" || stroke == "rgb(0,0,0)") return "border";
         if (stroke == "#ff0000" || stroke == "#f00" || stroke == "red" || stroke == "rgb(255,0,0)") return "mountain";
+        if (stroke == "#ff009b" || stroke == "rgb(255,0,155)") return "pre-creased mountain";
         if (stroke == "#0000ff" || stroke == "#00f" || stroke == "blue" || stroke == "rgb(0,0,255)") return "valley"; 
+        if (stroke == "#9b00ff" || stroke == "rgb(155,0,255)") return "pre-creased valley";
         if (stroke == "#00ff00" || stroke == "#0f0" || stroke == "green" || stroke == "rgb(0,255,0)") return "cut"; 
         if (stroke == "#ffff00" || stroke == "#ff0" || stroke == "yellow" || stroke == "rgb(255,255,0)") return "triangulation"; 
         if (stroke == "#ff00ff" || stroke == "#f0f" || stroke == "magenta" || stroke == "rgb(255,0,255)") return "hinge"; 
@@ -196,12 +234,14 @@ function initPattern(globals){
     function colorForAssignment(assignment){ // edit to also take in rgb value so it returns the correct color 
         if (assignment == "B") return "#000";//border
         if (assignment == "M") return "#f00";//mountain
+        if (assignment == "PM") return "#ff009b";//pre-creased mountain
         if (assignment == "V") return "#00f";//valley
+        if (assignment == "PV") return "#9b00ff";//pre-creased valley
         if (assignment == "C") return "#0f0";//cut
         if (assignment == "F") return "#ff0";//facet
         if (assignment == "U") return "#f0f";//hinge
         if (assignment == "G") return "#0ff";//glue tab
-        if (assignment == "GS") return "#9900ffff";//glue spring
+        if (assignment == "GS") return "#059696";//glue spring
     
         //return "#0ff"
     }
@@ -252,7 +292,6 @@ function initPattern(globals){
             const [r, g, b] = stroke.match(/\d+/g).map(Number);
 
             _circleParams.push([cx, cy, radius, g]);
-            console.log("We are insdie get Circle Params, (cx,cy): (", cx, ",", cy, ")")
 
             if (r==0 && b==255 && g>=1 && g<=255) {
                 _verticesRaw.push({x:cx, y:0, z:cy});
@@ -546,13 +585,13 @@ function initPattern(globals){
             $polygons.css({fill:"none", 'stroke-dasharray':"none"});
             $polylines.css({fill:"none", 'stroke-dasharray':"none"});
             $circles.css({ fill: "none", 'stroke-dasharray': "none" });
-            console.log("Circle Info1:", $circles);
-
             
 
             findType(verticesRaw, v1erticesAssignmentsRaw, bordersRaw, borderFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
             findType(verticesRaw, v1erticesAssignmentsRaw, mountainsRaw, mountainFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, preMountainsRaw, preMountainFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
             findType(verticesRaw, v1erticesAssignmentsRaw, valleysRaw, valleyFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
+            findType(verticesRaw, v1erticesAssignmentsRaw, preValleysRaw, preValleyFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
             findType(verticesRaw, v1erticesAssignmentsRaw, cutsRaw, cutFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
             findType(verticesRaw, v1erticesAssignmentsRaw, triangulationsRaw, triangulationFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
             findType(verticesRaw, v1erticesAssignmentsRaw, hingesRaw, hingeFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
@@ -576,7 +615,7 @@ function initPattern(globals){
             _$svg.remove();
 
             //todo revert back to old pattern if bad import
-            var success = parseSVG(verticesRaw, v1erticesAssignmentsRaw, bordersRaw, mountainsRaw, valleysRaw, cutsRaw, triangulationsRaw, hingesRaw, gluesRaw);
+            var success = parseSVG(verticesRaw, v1erticesAssignmentsRaw, bordersRaw, mountainsRaw, preMountainsRaw, valleysRaw, preValleysRaw, cutsRaw, triangulationsRaw, hingesRaw, gluesRaw);
             if (!success) return;
             generateSvg();
         },
@@ -644,15 +683,10 @@ function initPattern(globals){
             var strokeColor = colorForAssignment(foldData.edges_assignment[i]);
             line.setAttribute('stroke', strokeColor);
 
-            // // make dashed if special color
-            // if (strokeColor === "#9900ffff") {
-            //     line.setAttribute('stroke-dasharray', "5,5");
-            // }
-
-            line.setAttribute('opacity', opacityForAngle(
-                foldData.edges_foldAngle[i],
-                foldData.edges_assignment[i]
-            ));
+            // line.setAttribute('opacity', opacityForAngle(
+            //     foldData.edges_foldAngle[i],
+            //     foldData.edges_assignment[i]
+            // )); // not sure if this was important?
 
             line.setAttribute('x1', v1[0]);
             line.setAttribute('y1', v1[2]);
@@ -735,13 +769,15 @@ function initPattern(globals){
     }
 
 
-    function parseSVG(_verticesRaw, _v1erticesAssignmentsRaw, _bordersRaw, _mountainsRaw, _valleysRaw, _cutsRaw, _triangulationsRaw, _hingesRaw, _gluesRaw){
+    function parseSVG(_verticesRaw, _v1erticesAssignmentsRaw, _bordersRaw, _mountainsRaw, _preMountainsRaw, _valleysRaw, _preValleysRaw, _cutsRaw, _triangulationsRaw, _hingesRaw, _gluesRaw){
         // _segmentsRaw will have the form [node1, node2, color]
-        // _valleysRaw and _mountainsRaw have the special form [node1, node2, color, targetAngle]
+        // _valleysRaw, _preValleysRaw, _mountainsRaw, and _preMountainsRaw have the special form [node1, node2, color, targetAngle]
 
         _bordersRaw = cleanSegmentsRawForColor(_bordersRaw);
         _mountainsRaw = cleanSegmentsRawForColor(_mountainsRaw);
+        _preMountainsRaw = cleanSegmentsRawForColor(_preMountainsRaw);
         _valleysRaw = cleanSegmentsRawForColor(_valleysRaw);
+        _preValleysRaw = cleanSegmentsRawForColor(_preValleysRaw);
         _cutsRaw = cleanSegmentsRawForColor(_cutsRaw);
         _triangulationsRaw = cleanSegmentsRawForColor(_triangulationsRaw);
         _hingesRaw = cleanSegmentsRawForColor(_hingesRaw);
@@ -765,11 +801,23 @@ function initPattern(globals){
             foldData.edges_greenVal.push(null);
             foldData.edges_foldAngle.push(edge[3]); // I added color as an input of _segmentsRaw
         });
+        _.each(_preMountainsRaw, function(edge){
+            foldData.edges_vertices.push([edge[0], edge[1]]);
+            foldData.edges_assignment.push("PM");
+            foldData.edges_greenVal.push(null);
+            foldData.edges_foldAngle.push(-5); 
+        });
         _.each(_valleysRaw, function(edge){
             foldData.edges_vertices.push([edge[0], edge[1]]);
             foldData.edges_assignment.push("V");
             foldData.edges_greenVal.push(null);
             foldData.edges_foldAngle.push(edge[3]); // I added color as an input of _segmentsRaw
+        });
+        _.each(_preValleysRaw, function(edge){
+            foldData.edges_vertices.push([edge[0], edge[1]]);
+            foldData.edges_assignment.push("PV");
+            foldData.edges_greenVal.push(null);
+            foldData.edges_foldAngle.push(5); 
         });
         _.each(_triangulationsRaw, function(edge){
             foldData.edges_vertices.push([edge[0], edge[1]]);
@@ -817,7 +865,6 @@ function initPattern(globals){
         foldData = FOLD.filter.removeLoopEdges(foldData);//remove edges that points to same vertex
         foldData = FOLD.filter.removeDuplicateEdges_vertices(foldData);//remove duplicate edges
 
-
         foldData = FOLD.convert.edges_vertices_to_vertices_vertices_unsorted(foldData);
         foldData = removeStrayVertices(foldData);//delete stray anchors
         foldData = removeRedundantVertices(foldData, 0.01);//remove vertices that split edge
@@ -830,8 +877,8 @@ function initPattern(globals){
 
         foldData = reverseFaceOrder(foldData);//set faces to counter clockwise
 
+        // need to write a custom split edges function so that glue dots can be in the middle of an edge
         foldData = addGlueSprings(foldData); // add glue springs to folddata!
-        // FIX: CONTINUE HERE: add GLue springs is adding things incorrectly somehow - there are lines crossing!!
         foldClone = structuredClone(foldData);
         console.log("Here is foldClone after adding Glue Springs: ", foldClone)
 
@@ -872,14 +919,19 @@ function initPattern(globals){
         foldData = triangulatePolys(fold, is2d);
 
         mountains = FOLD.filter.mountainEdges(foldData);
-        valleys = FOLD.filter.valleyEdges(foldData);
+        //preMountains = FOLD.filter.preMountainEdges(foldData);
+        valleys = FOLD.filter.valleyEdges(foldData); 
+        //preValleys = FOLD.filter.preValleyEdges(foldData); // I wonder what these do?
+        //FIX: fold format does not have pre-mountains or pre-valleys
         borders = FOLD.filter.boundaryEdges(foldData);
         hinges = FOLD.filter.unassignedEdges(foldData);
         triangulations = FOLD.filter.flatEdges(foldData);
         glues = FOLD.filter.glueEdges(foldData);
 
         $("#numMtns").html("(" + mountains.length + ")");
+        $("#numPreMtns").html("(" + preMountains.length + ")");
         $("#numValleys").html("(" + valleys.length + ")");
+        $("#numPreValleys").html("(" + preValleys.length + ")");
         $("#numFacets").html("(" + triangulations.length + ")");
         $("#numBoundary").html("(" + borders.length + ")");
         $("#numPassive").html("(" + hinges.length + ")");
@@ -909,9 +961,6 @@ function initPattern(globals){
 
     function addGlueSprings(fold){ // FIX: this is copied from getFacesAndVerticesForEdges - need to delete glueparams stuff there
         // I'm adding glue edges to foldata instead of glueparams, delete glueparams
-        
-        foldClone = structuredClone(fold);
-        console.log("Check 1: here is foldClone before adding any glue springs: ", foldClone)
         const originalEdgesLength = fold.edges_vertices.length; // hopefully this fixes any length changing issues
         var dim = fold.vertices_coords[0].length;
 
@@ -1018,8 +1067,6 @@ function initPattern(globals){
         }
 
         var circleSpringParams = []
-
-        console.log("We are inside addGlue Springs, here is circle params: ", circleParams)
         for (var i=0;i<fold.vertices_coords.length;i++){
             var x = fold.vertices_coords[i][0];
             var y = fold.vertices_coords[i][dim-1];
@@ -1031,7 +1078,6 @@ function initPattern(globals){
                 var g = circleParams[j][3];
                 
                 if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad){
-                    console.log("highlighted vertex with g value: ", g, "at vertex: ", i)
                     circleSpringParams.push([i, g]);
                 }
             }
@@ -1287,11 +1333,11 @@ function initPattern(globals){
                 console.log("FIX: Note to Nina, I thought that this was a case that would never show up, soooo I ignored it. Turns out it's important so I need you to go in and fix getFacesAndVerticesForEdges in pattern.js. Sorry!");
             }
 
-            if (assignment == "M" || assignment == "V" || assignment == "F"){
+            if (assignment == "M" || assignment == "PM" || assignment == "V" || assignment == "PV" || assignment == "F"){
                 var v1 = edgeI[0];
                 var v2 = edgeI[1];
                 var creaseParams = [];
-                if (assignment !== "M" || assignment !== "V" || assignment !== "F") {
+                if (assignment !== "M" || assignment !== "PM" || assignment !== "V" || assignment !== "PV" || assignment !== "F") {
                     for (var j=0;j<faces.length;j++){ // this goes through all the faces in order to find the correct crease faces!
                         var face = faces[j];
                         var faceVerts = [face[0], face[1], face[2]];

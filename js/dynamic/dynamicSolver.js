@@ -419,19 +419,13 @@ function initDynamicSolver(globals){
             for (var j=0;j<nodes[i].beams.length;j++){
                 var beam = nodes[i].beams[j];
                 var beam_assignment = beam.type;
-                beamMeta[4*index] = beam.getK();
+                //console.log("here is beam assignment!: ", beam_assignment)
+                beamMeta[4*index] = beam.getK(beam_assignment);
                 beamMeta[4*index+1] = beam.getD();
                 if (initing) {
-                    //for nina, eggregiously wrong, FIX
-                    //if(index==2 || index==9){
-                    //    beamMeta[4*index+2] = 0.5*beam.getLength();
-                    //    beamMeta[4*index+3] = beam.getOtherNode(nodes[i]).getIndex();
-                   // }
-                    //else{
-                        //console.log("here is the beam that is being added to beamMeta", beam, beam.type);
-                        beamMeta[4*index+2] = beam.getLength(beam_assignment);
-                        beamMeta[4*index+3] = beam.getOtherNode(nodes[i]).getIndex();
-                    //}
+                    //console.log(i, j, "here is the beam that is being added to beamMeta", beam, beam.type);
+                    beamMeta[4*index+2] = beam.getLength(beam_assignment);
+                    beamMeta[4*index+3] = beam.getOtherNode(nodes[i]).getIndex();
                     
                 }
                 index+=1;
@@ -440,7 +434,7 @@ function initDynamicSolver(globals){
         // //for nina
         // === Pretty printing for debugging ===
 
-        // //--- Print beamMeta ---
+        //--- Print beamMeta ---
         // console.group("BeamMeta (per-beam parameters)");
 
         // for (let b = 0; b < index; b++) {
@@ -461,7 +455,7 @@ function initDynamicSolver(globals){
         // console.groupEnd();
 
 
-        // // --- Print meta (per-node beam index info) ---
+        // --- Print meta (per-node beam index info) ---
         // console.group("Meta (node → beam mapping)");
 
         // for (let n = 0; n < nodes.length; n++) {
@@ -535,14 +529,23 @@ function initDynamicSolver(globals){
     }
 
     function updateCreasesMeta(initing){
+        console.log("Here is creases: ", creases)
         for (var i=0;i<creases.length;i++){
             var crease = creases[i];
+            //if (i==0 || i == 1 || i == 2 || i == 3 || i == 4){ // = 0 for simeple flat v-fold,  = 0-4 for letter I card
+                //creaseMeta[i*4] = .01;
+                //console.log("changing k for crease ", creases[i])
+            //}else{
             creaseMeta[i*4] = crease.getK();
+            //}
+            
             // creaseMeta[i*4+1] = crease.getD();
             if (initing) creaseMeta[i*4+2] = crease.getTargetTheta();
         }
+        console.log("Crease Meta is: ", creaseMeta)
         globals.gpuMath.initTextureFromData("u_creaseMeta", textureDimCreases, textureDimCreases, "FLOAT", creaseMeta, true);
     }
+    
 
     function updateLastPosition(){
         for (var i=0;i<nodes.length;i++){

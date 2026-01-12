@@ -88,8 +88,14 @@ Beam.prototype.getVector = function(fromNode){
 
 //dynamic solve
 
-Beam.prototype.getK = function(){
-    return globals.axialStiffness/this.getLength();
+Beam.prototype.getK = function(assignment){
+    //console.log("here is assignment inside get k: ", assignment)
+    if (assignment == "glue spring beam"){
+        return globals.glueStiffness/this.getLength();
+    } else{
+        return globals.axialStiffness/this.getLength();
+    }
+    
 };
 
 Beam.prototype.getD = function(){

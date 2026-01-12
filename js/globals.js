@@ -17,7 +17,9 @@ function initGlobals(){
         color2: "dddddd",
         edgesVisible: true,
         mtnsVisible: true,
+        preMtnsVisible: true,
         valleysVisible: true,
+        preValleysVisible: true,
         panelsVisible: false,
         passiveEdgesVisible: false,
         boundaryEdgesVisible: true,
@@ -50,6 +52,7 @@ function initGlobals(){
         axialStiffness: 20,
         creaseStiffness: 0.7,
         panelStiffness: 0.7,
+        glueStiffness: 0.7,
         faceStiffness: 0.2,
 
         //dynamic sim settings

@@ -275,8 +275,30 @@
                 vec4 creaseGeo = texture2D(u_creaseGeo, scaledCreaseIndex);//[h1, h2, coef1, coef2]
                 if (creaseGeo[0]< 0.0) continue;//crease disabled bc it has collapsed too much
 
-                float targetTheta = creaseMeta[2] * u_creasePercent;
-                float angForce = creaseMeta[0]*(targetTheta-thetas[0]);// + creaseMeta[1]*thetas[1];
+                float restTheta = creaseMeta[2];
+                float targetTheta = restTheta * u_creasePercent;
+                float theta = thetas[0];
+
+                const float halfCreaseAngle = 0.0872664600610733; // 5 degrees in radians
+                const float eps = 1e-6;
+                bool isHalfCrease = abs(abs(restTheta) - halfCreaseAngle) < eps;
+                //bool isHalfCrease = false;
+                float s = sign(restTheta);
+
+                //float angForce = creaseMeta[0]*(targetTheta-thetas[0]);// + creaseMeta[1]*thetas[1]; note to nina: come back to this line if things don't work out 
+
+                float angForce = 0.0;
+
+                if (isHalfCrease) {
+                    // active only on one side, depending on sign of restTheta
+                    if ((theta - targetTheta) * s < 0.0) {
+                        angForce = creaseMeta[0] * (targetTheta - theta);
+                    }
+                } else {
+                    // full dihedral spring
+                    angForce = creaseMeta[0] * (targetTheta - theta);
+                }
+
 
                 float nodeNum = nodeCreaseMeta[1];//1, 2, 3, 4
 
@@ -1190,6 +1212,10 @@
             </div>
             <div class="sliderInput" id="panelStiffness">
                 <span class="label-slider">Facet Crease Stiffness : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
+                <input value="" placeholder="" class="float form-control" type="text">
+            </div>
+            <div class="sliderInput" id="glueStiffness">
+                <span class="label-slider">Glue Spring Strength : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
                 <input value="" placeholder="" class="float form-control" type="text">
             </div>
             <div class="sliderInput" id="percentDamping">
