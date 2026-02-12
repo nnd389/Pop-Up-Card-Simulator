@@ -35,6 +35,7 @@ function initGlobals(){
         shouldResetDynamicSim: false,//not used
         shouldChangeCreasePercent: false,
         nodePositionHasChanged: false,
+        collisionsHasChanged: false,
         shouldZeroDynamicVelocity: false,
         shouldCenterGeo: false,
         needsSync: false,
@@ -54,9 +55,12 @@ function initGlobals(){
         panelStiffness: 0.7,
         glueStiffness: 0.7,
         faceStiffness: 0.2,
+        collisionStiffness: 0.7,
+        collisionThickness: 0.01,
 
         //dynamic sim settings
         percentDamping: 0.45,//damping ratio
+        collisionDamping: 0.45,
         density: 1,
         integrationType: "euler",
 

@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="300px"
+   version="1.1"
+   width="300px"
+   id="svg89446"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs89402" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="140"
+     y1="200"
+     y2="200"
+     id="line89418" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="140"
+     x2="140"
+     y1="200"
+     y2="250"
+     id="line89420" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="0"
+     y1="200"
+     y2="250"
+     id="line89422" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="0"
+     x2="35"
+     y1="250"
+     y2="300"
+     id="line89424" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="35"
+     x2="70"
+     y1="300"
+     y2="250"
+     id="line89426" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="70"
+     x2="105"
+     y1="250"
+     y2="300"
+     id="line89428" />
+  <line
+     stroke="black"
+     stroke-width="2"
+     x1="105"
+     x2="140"
+     y1="300"
+     y2="250"
+     id="line89430" />
+  <line
+     stroke="blue"
+     stroke-width="2"
+     x1="70"
+     x2="70"
+     y1="200"
+     y2="250"
+     id="line89432"
+     style="fill:#ff00ff;stroke:#ff00ff;stroke-opacity:1" />
+  <line
+     stroke="rgb(0,255,255)"
+     stroke-width="2"
+     x1="0"
+     x2="70"
+     y1="250"
+     y2="250"
+     id="line89434"
+     style="stroke:#ff00ff;stroke-opacity:1" />
+  <line
+     stroke="rgb(0,155,255)"
+     stroke-width="2"
+     x1="70"
+     x2="140"
+     y1="250"
+     y2="250"
+     id="line89436"
+     style="stroke:#ff00ff;stroke-opacity:1" />
+  <path
+     style="fill:none;stroke:#000000;stroke-width:1.03536px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 17.230437,17.655407 V 118.79907 H 127.7191 V 17.655407 Z"
+     id="path1" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:1.10765px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 72.284848,17.986477 127.45225,69.857153"
+     id="path4" />
+  <path
+     style="fill:none;stroke:#0000ff;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 72.247569,118.50734 V 17.947146"
+     id="path2" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:1.09569px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 72.237665,17.980467 17.337459,70.859848"
+     id="path3" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:0.984913px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 84.451509,270.31821 40.983201,0.41663"
+     id="path5-7" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:0.967291px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 81.270787,50.410755 109.41939,79.185287"
+     id="path5-7-8" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:0.967291px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 64.518089,50.935249 36.369484,79.709781"
+     id="path5-7-8-0" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:0.967291px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 55.300033,270.50435 -40.252021,0.30397"
+     id="path5-7-8-0-0" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:0.973866px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 109.82607,79.678191 17.9181,-9.704521"
+     id="path7" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 72.283619,66.289198 9.3062,-15.619848"
+     id="path7-4" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 64.123672,50.883363 8.183757,15.42464"
+     id="path7-4-8" />
+  <path
+     style="fill:none;stroke:#ffff00;stroke-width:0.962477px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="M 36.32671,79.77175 17.551295,70.739744"
+     id="path7-4-4" />
+  <circle
+     style="fill:none;stroke:#00ffff;stroke-opacity:1"
+     id="path8"
+     cx="109.85436"
+     cy="79.390335"
+     r="1.8389592" />
+  <circle
+     style="fill:none;stroke:#00feff;stroke-opacity:1"
+     id="path8-9"
+     cx="81.593277"
+     cy="50.674278"
+     r="1.8389592" />
+  <circle
+     style="fill:none;stroke:#00faff;stroke-opacity:1"
+     id="path8-9-1"
+     cx="64.015442"
+     cy="51.49556"
+     r="1.8389592" />
+  <circle
+     style="fill:none;stroke:#00faff;stroke-opacity:1"
+     id="path8-9-1-9"
+     cx="55.064835"
+     cy="270.70163"
+     r="1.8389592" />
+  <circle
+     style="fill:none;stroke:#00f9ff;stroke-opacity:1"
+     id="path8-9-1-6"
+     cx="36.406261"
+     cy="79.724091"
+     r="1.8389592" />
+  <circle
+     style="fill:none;stroke:#00f8ff;stroke-opacity:1"
+     id="path8-9-1-6-6"
+     cx="17.225277"
+     cy="70.791328"
+     r="1.8389592" />
+  <circle
+     style="fill:none;stroke:#00f9ff;stroke-opacity:1"
+     id="path8-9-1-6-2"
+     cx="14.855265"
+     cy="270.94208"
+     r="1.8389592" />
+  <circle
+     style="fill:none;stroke:#00ffff;stroke-opacity:1"
+     id="path8-1"
+     cx="-102.6498"
+     cy="280.01266"
+     r="1.8389592"
+     transform="rotate(-45)" />
+  <circle
+     style="fill:none;stroke:#00feff;stroke-opacity:1"
+     id="path8-9-9"
+     transform="rotate(-45)"
+     r="4.2900438"
+     cy="250.0497"
+     cx="-132.12932" />
+  <circle
+     style="fill:none;stroke:#00fdff;stroke-opacity:1"
+     id="path8-9-9-0"
+     transform="rotate(-45)"
+     r="4.2900438"
+     cy="226.66808"
+     cx="-127.41088" />
+  <circle
+     style="fill:none;stroke:#00fdff;stroke-opacity:1"
+     id="path8-9-9-0-5"
+     transform="rotate(-45)"
+     r="4.2900438"
+     cy="64.236687"
+     cx="38.00909" />
+  <circle
+     style="fill:none;stroke:#00fcff;stroke-opacity:1"
+     id="path8-9-9-0-5-5"
+     transform="rotate(-45)"
+     r="4.2900438"
+     cy="139.57146"
+     cx="40.598255" />
+  <circle
+     style="fill:none;stroke:#00fcff;stroke-opacity:1"
+     id="path8-9-9-0-5-5-6"
+     transform="rotate(-45)"
+     r="4.2900438"
+     cy="275.62115"
+     cx="-77.834991" />
+  <circle
+     style="fill:none;stroke:#00f8ff;stroke-opacity:1"
+     id="path8-9-1-6-6-2"
+     cx="0.31009841"
+     cy="249.69221"
+     r="1.8389592" />
+</svg>

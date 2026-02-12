@@ -598,7 +598,6 @@ function initPattern(globals){
             findType(verticesRaw, v1erticesAssignmentsRaw, gluesRaw, glueFilter, $paths, $lines, $rects, $polygons, $polylines, $circles);
 
             circleParams = getCircleParams(verticesRaw, v1erticesAssignmentsRaw, $circles); // curved folding has parse ellipse as well
-            console.log("Here is circleParams: ", circleParams)
 
             if (badColors.length>0){
                 badColors = _.uniq(badColors);
@@ -698,7 +697,7 @@ function initPattern(globals){
         }
 
         // ---- draw vertex indices ----
-        var fontSize = scale / 40;   // tweak as needed
+        var fontSize = scale / 50;   // tweak as needed
         var textOffset = scale / 200;
 
         for (var i = 0; i < foldData.vertices_coords.length; i++) {
@@ -715,6 +714,70 @@ function initPattern(globals){
 
             svg.appendChild(text);
         }
+
+        // ---- draw face indices ----
+
+        for (var i = 0; i < foldData.faces_vertices.length; i++) {
+            var face = foldData.faces_vertices[i];
+
+            if (face.length < 3) continue; // safety check
+
+            // Compute face centroid
+            var cx = 0, cy = 0, cz = 0;
+            for (var j = 0; j < face.length; j++) {
+                var v = foldData.vertices_coords[face[j]];
+                cx += v[0];
+                cy += v[1];
+                cz += v[2];
+            }
+
+            cx /= face.length;
+            cy /= face.length;
+            cz /= face.length;
+
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
+
+            text.setAttribute('x', cx);
+            text.setAttribute('y', cz);          // using x–z plane like edges
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', 'blue');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('pointer-events', 'none');
+
+            svg.appendChild(text);
+        }
+
+        // ---- draw edge indices ----
+
+        for (var i = 0; i < foldData.edges_vertices.length; i++) {
+            var edge = foldData.edges_vertices[i];
+
+            if (edge.length < 2) continue; // safety check
+
+            var v0 = foldData.vertices_coords[edge[0]];
+            var v1 = foldData.vertices_coords[edge[1]];
+
+            // Compute midpoint of edge
+            var mx = 0.5 * (v0[0] + v1[0]) + 2;
+            var my = 0.5 * (v0[2] + v1[2]) + 2;
+
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
+
+            text.setAttribute('x', mx);
+            text.setAttribute('y', my);          // using x–z plane like edges
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', 'red');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('pointer-events', 'none');
+
+            svg.appendChild(text);
+        }
+
+
 
         $("#svgViewer").html(svg);
     }
@@ -1083,7 +1146,6 @@ function initPattern(globals){
             }
         }
 
-        console.log("Here is circle SPring Params: ", circleSpringParams)
         for (var i=0;i<circleSpringParams.length;i++){
             var gI = circleSpringParams[i][1];
             var vertI = circleSpringParams[i][0];
@@ -1091,7 +1153,6 @@ function initPattern(globals){
                 var gJ = circleSpringParams[j][1];
                 var vertJ = circleSpringParams[j][0];
                 if (gI==gJ && i!=j){
-                    console.log("we got a match!!")
                     fold.edges_assignment.push("GS");
                     fold.edges_foldAngle.push(null);
                     fold.edges_greenVal.push(null);

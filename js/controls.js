@@ -462,7 +462,7 @@ function initControls(globals){
         globals.creaseMaterialHasChanged = true;
     });
 
-    setSliderInput("#glueStiffness", globals.glueStiffness, 0, 3, 0.01, function(val){
+    setSliderInput("#glueStiffness", globals.glueStiffness, 0, 6, 0.01, function(val){
         globals.glueStiffness = val;
         globals.materialHasChanged = true;
     });
@@ -472,7 +472,7 @@ function initControls(globals){
         globals.materialHasChanged = true;
     });
 
-    var creasePercentSlider = setSliderInput("#creasePercent", globals.creasePercent*100, -100, 100, 1, function(val){
+    var creasePercentSlider = setSliderInput("#creasePercent", globals.creasePercent*100, -150, 150, 1, function(val){
         globals.creasePercent = val/100;
         globals.shouldChangeCreasePercent = true;
         updateCreasePercent();

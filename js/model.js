@@ -284,9 +284,6 @@ function initModel(globals){
             let myNewBeam = new Beam([nodes[_edges[i][0]], nodes[_edges[i][1]]], _assignments[i]);
             edges.push(myNewBeam);   
         }
-        //console.log("Here are glueparams: ", glueParams);
-        //console.log("Here are glueDotParams: ", glueDotParams)
-        console.log("Here are edges: ", edges)
 
         // Now we are going to create the glue springs! (these are just a few extra beams)
         // for (var i=0;i<glueParams.length;i++){
