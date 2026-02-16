@@ -22,7 +22,7 @@ function initDynamicSolver(globals){
     var externalForces;
     var mass;
     var meta;//[beamMetaIndex, numBeams, nodeCreaseMetaIndex, numCreases]
-    var meta2;//[nodeFaceMetaIndex, numFaces, nodeCollisionFaceMetaIndex, numCollFaces] // number of faces the node is part appended with collisionMeta: number of faces the node is colliding with
+    var meta2;//[nodeFaceMetaIndex, numFaces, nodeCollisionFaceMetaIndex, numCollFaces]  // gotta double meta2 now :/
     var beamMeta;//[K, D, length, otherNodeIndex]
 
     var normals;
@@ -30,6 +30,7 @@ function initDynamicSolver(globals){
     var nominalTriangles;//[angleA, angleB, angleC]
     var nodeFaceMeta;//[faceIndex, a, b, c] textureNodeFaces // these are the faces the node is part of
     var nodeCollisionFaceMeta; //[faceIndex, a, b, c]        // these are faces the node is colliding with
+    //var facesAreHitMeta; // [nodeIndex_a, -1, b, c, u, v, w, d] // faces that are being collided with that node is part of // appending to end of nodeCollisionfacemeta
     var creaseMeta;//[k, d, targetTheta, -] textureDimCreases
     var creaseMeta2;//[node1Index, node2Index, node3index, node4index]//nodes 1 and 2 are opposite crease, 3 and 4 are on crease, textureDimCreases
     var nodeCreaseMeta;//[creaseIndex (thetaIndex), nodeIndex (1/2/3/4), -, -] textureDimNodeCreases
@@ -55,6 +56,7 @@ function initDynamicSolver(globals){
     var programsInited = false;//flag for initial setup
 
     var textureDim = 0;
+    var textureDimNodes = 0;
     var textureDimEdges = 0;
     var textureDimFaces = 0;
     var textureDimCreases = 0;
@@ -175,6 +177,8 @@ function initDynamicSolver(globals){
         } else {//euler
             gpuMath.setProgram("velocityCalc");
             gpuMath.setSize(textureDim, textureDim);
+
+
 
             // don't forget to put all this in the verlet option as well
             // positions might be one timestep off
@@ -346,6 +350,7 @@ function initDynamicSolver(globals){
         gpuMath.setUniformForProgram("velocityCalc", "u_nodeFaceMeta", 13, "1i");
         gpuMath.setUniformForProgram("velocityCalc", "u_nominalTriangles", 14, "1i");
         gpuMath.setUniformForProgram("velocityCalc", "u_nodeCollisionFaceMeta", 15, "1i");
+
         gpuMath.setUniformForProgram("velocityCalc", "u_textureDim", [textureDim, textureDim], "2f");
         gpuMath.setUniformForProgram("velocityCalc", "u_textureDimEdges", [textureDimEdges, textureDimEdges], "2f");
         gpuMath.setUniformForProgram("velocityCalc", "u_textureDimFaces", [textureDimFaces, textureDimFaces], "2f");
@@ -598,20 +603,13 @@ function initDynamicSolver(globals){
     }
 
     function getNodeFaceCollisionMeta(currentPositions, meta2_, nodeFaceMeta_, nodeCollisionFaceMeta_){ // CONTINUE HERE
-        
+        // populate meta2 second pair of entries: [nodeFaceMetaIndex, numFace, nodeCollMetaIndex , numCollFaces]
+        // populate nodeCollisionFaceMeta = [faceIndex, a, b, c] 
+        // populate facesAreHitMeta = [nodeIndex_a, -1, b, c, u, v, w, d] 
 
-
-        var faceBarySum = [];
-        for (var j=0;j<faces.length;j++){ // face j
-            faceBarySum.push([j, 0, 0, 0]);
-        }
-
-
-        // populate meta2 second half: [-, -, nodeCollMetaIndex , numCollFaces]
-        // and nodeCollisionFaceMeta = [faceIndex, a, b, c] + [node index, u, v, w]
-
-        // attempting to double the length of collisionmeta
-        var index = 0;
+        facesAreHitMeta_ = [];
+        var index = 0; // index is faceGroupIndex
+        var facesAreHitIndex = 0;
         for (var i=0;i<nodes.length;i++){ //node i
             meta2_[4*i+2] = index;
             var numFaceColl = 0;
@@ -623,101 +621,78 @@ function initDynamicSolver(globals){
                     var A = [currentPositions[3*faces[j][0]], currentPositions[3*faces[j][0]+2], currentPositions[3*faces[j][0]+1]]; // [x,y,z]
                     var B = [currentPositions[3*faces[j][1]], currentPositions[3*faces[j][1]+2], currentPositions[3*faces[j][1]+1]]; // [x,y,z]
                     var C = [currentPositions[3*faces[j][2]], currentPositions[3*faces[j][2]+2], currentPositions[3*faces[j][2]+1]]; // [x,y,z]
-
-                    //var test = isProjPointInTriangle3D(A,B,C,W); // NOTE TO NINA: rewrite this function,
                     
-                    // see: https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
-
                     var P = projectPointToPlane(A, B, C, W);
-                    var result = isPInTriangleABC(A, B, C, P);
-                    var isInside = result.isInside;
-                    var u = result.alpha;
-                    var v = result.beta;
-                    var w = result.gamma;
+                    var baryInfo = isPInTriangleABC(A, B, C, P);
+                    var isInside = baryInfo.isInside;
+                    var u = baryInfo.alpha;
+                    var v = baryInfo.beta;
+                    var w = baryInfo.gamma;
 
-                    var distWP = (W[0]-P[0])*(W[0]-P[0]) + (W[1]-P[1])*(W[1]-P[1]) + (W[2]-P[2])*(W[2]-P[2]);
+                    var distWP = (W[0]-P[0])*(W[0]-P[0]) + (W[1]-P[1])*(W[1]-P[1]) + (W[2]-P[2])*(W[2]-P[2]); // make this signed distance - would help a lot distWP is currently always positive, so very close to zero
+                    
 
-                    if (isInside == true && distWP <= 0.02){
-                        // node i is officially colliding with face j
-                        var _index = (index + numFaceColl * 2) * 4; // added *2
+                    if (isInside == true && distWP <= 0.02){ // node i is officially colliding with face j
+                        var _index = (index + numFaceColl) * 4; // _index is the texel index,    _index + k is the element index
 
-                        nodeCollisionFaceMeta_[_index] = j; // [FaceIndex, a, b, c,]
-                        nodeCollisionFaceMeta_[_index+1] = faces[j][0];
-                        nodeCollisionFaceMeta_[_index+2] = faces[j][1];
-                        nodeCollisionFaceMeta_[_index+3] = faces[j][2];
-
-                        nodeCollisionFaceMeta_[_index+4] = i; // node index
-                        nodeCollisionFaceMeta_[_index+5] = u;
-                        nodeCollisionFaceMeta_[_index+6] = v;
-                        nodeCollisionFaceMeta_[_index+7] = w;
-
-                        faceBarySum[j][1] += u;
-                        faceBarySum[j][2] += v;
-                        faceBarySum[j][3] += w;
-
+                        nodeCollisionFaceMeta_[_index] = j; // FaceIndex
+                        nodeCollisionFaceMeta_[_index+1] = faces[j][0]; // a
+                        nodeCollisionFaceMeta_[_index+2] = faces[j][1]; // b
+                        nodeCollisionFaceMeta_[_index+3] = faces[j][2]; // c
                         numFaceColl += 1;
+
+                        for (var n=0; n<3; n++){ 
+                            // we just hit a face, here is a texel entry for one of the nodes on the affected face
+                            facesAreHitMeta_.push(faces[j][n]); // node on affected face
+                            facesAreHitMeta_.push(n == 0 ? -1 : faces[j][0]); // affected face node 0 // change one of these to -1 (the repeated number)
+                            facesAreHitMeta_.push(n == 1 ? -1 : faces[j][1]); // affected face node 1 // conditional? ifTrue : ifFalse
+                            facesAreHitMeta_.push(n == 2 ? -1 : faces[j][2]); // affected face node 2
+                            facesAreHitMeta_.push(u);
+                            facesAreHitMeta_.push(v);
+                            facesAreHitMeta_.push(w);
+                            facesAreHitMeta_.push(distWP);
+                            facesAreHitIndex++;
+                        }
                         console.log("Node ", i, " is colliding with face ", j, "!!")
                     }
                 }
             }
-            index+=numFaceColl*2; // added *2
-            meta2_[4*i+3] = numFaceColl; // ADDING IN collisionMeta INFO TO END OF META
+            index+=numFaceColl;
+            meta2_[4*i+3] = numFaceColl; 
         }
 
-        // DELETE THIS later - need to make nodeFaces a global variable?
-        // in fact, you really need to figure out how to reduce complexity as a whole - this function is doing too much
-        var numNodeFaces = 0;
-        var nodeFaces = [];
-        for (var i=0;i<nodes.length;i++){
-            nodeFaces.push([]);
-            for (var j=0;j<faces.length;j++){
-                if (faces[j].indexOf(i)>=0) {
-                    nodeFaces[i].push(j);
-                    numNodeFaces++;
-                }
-            }
+        // CONTINUE HERE: double meta2 lol... need to have [-, -, -, -, facesAreHitMetaIndex, numFaces]
+        // NEXT STEP: make sure you fix index.html for all the times that meta2 is referenced... (several times so plz be careful)
+        // NEXT STEP: in Index.html, loop through faces again to add the collision force to the triangles! 
+
+
+
+        // sort facesAreHitMeta by nodeIndex (lets hope this works!)
+        const numRecords = facesAreHitIndex;
+        let records = [];
+        for (let i = 0; i < numRecords; i++) {
+            records.push(
+                facesAreHitMeta_.slice(i * 8, i * 8 + 8)
+            );
         }
+        records.sort((a, b) => a[0] - b[0]);
+        facesAreHitMeta_ = records.flat();
 
 
+        
 
-        // populate meta2 first half: [nodeFaceMetaIndex numFace, nodeCollMetaIndex , numCollFaces]
-        // and nodeFaceMetafirst half: [FaceIndex, a, b, c] + [Usum, -, -, -]
-        // need to put faceBarySum = [faceIndex, u, v, w] in correct locations 
-        var index = 0;
-        for (var i=0;i<nodes.length;i++){ // node i
-            meta2_[4*i] = index;
-            var numFaces = nodeFaces[i].length;
-            meta2_[4*i+1] = numFaces;
-            for (var j=0;j<numFaces;j++){ // face j
-                // want to populate every other one
-                var _index = (index+j*2)*4;
-                var face = faces[nodeFaces[i][j]]; // nodeFaces[i][j] is the index of what face we are on
-                nodeFaceMeta_[_index] = nodeFaces[i][j];
-                nodeFaceMeta_[_index+1] = face[0] == i ? -1 : face[0];
-                nodeFaceMeta_[_index+2] = face[1] == i ? -1 : face[1];
-                nodeFaceMeta_[_index+3] = face[2] == i ? -1 : face[2];
-
-                // now fill in the appropriate u/v/w Bary coord
-                if (face[0] == i){
-                    var uvwIndex = 1;
-                } else if (face[1] == i){
-                    var uvwIndex = 2;
-                } else if (face[2] == i){
-                    var uvwIndex = 3;
-                }
-
-                // nodeFaceMetafirst = [FaceIndex, a, b, c] + [Usum, -, -, -]
-                nodeFaceMeta_[_index+4] = faceBarySum[nodeFaces[i][j]][uvwIndex]
-            }
-            index+=numFaces*2;
+        // time to put facesAreHitMeta somewhere useful... 
+        // append facesAreHitMeta to the end of nodeCollisionFaceMeta
+        // the index of the LAST entry of nodeCollisionFaceMeta is index+numFaceColl-1
+        for (var i=0;i<facesAreHitMeta_.length;i++){
+            nodeCollisionFaceMeta_[index+numFaceColl+i] = facesAreHitMeta_[i];
         }
 
 
 
-        // if (faceBarySum[1][1] > 0.0){
-        //      console.log("nodeFaceMeta is: ", nodeFaceMeta_)
+        // if (facesAreHitMeta_[4] > 0.0){
+        //      console.log("facesAreHitMeta_ is: ", facesAreHitMeta_)
         // }
-
 
         
         return [meta2_, nodeFaceMeta_, nodeCollisionFaceMeta_]
@@ -874,6 +849,7 @@ function initDynamicSolver(globals){
             }
         }
         textureDimNodeFaces = calcTextureSize(numNodeFaces);
+        textureDimNodes = calcTextureSize(nodes.length); // DELETE: this is just textureDim
 
         textureDimNodeCollisions = calcTextureSize(faces.length * nodes.length);
 
@@ -912,8 +888,14 @@ function initDynamicSolver(globals){
         normals = new Float32Array(textureDimFaces*textureDimFaces*4);
         faceVertexIndices = new Float32Array(textureDimFaces*textureDimFaces*4);
         creaseMeta = new Float32Array(textureDimCreases*textureDimCreases*4);
-        nodeFaceMeta = new Float32Array(textureDimNodeFaces*textureDimNodeFaces*4*2); // doubling the length of nodeFaceMeta to include bary coords, FIX: halve nodeCollisionFaceMeta if this works (like go back to the original)
-        nodeCollisionFaceMeta = new Float32Array(textureDimNodeCollisions*textureDimNodeCollisions*4*2);// doubling the length to also include barycentric coords... if only I wasn't out of textures :(
+        nodeFaceMeta = new Float32Array(textureDimNodeFaces*textureDimNodeFaces*4); 
+
+        const floatsNodeCollision = textureDimNodeCollisions * textureDimNodeCollisions * 4;
+        const floatsFacesAreHit = textureDimNodeFaces * textureDimNodes * 8;
+        nodeCollisionFaceMeta = new Float32Array(floatsNodeCollision + floatsFacesAreHit); // trying to append facesAreHitMeta to the end of nodeCollisionFaceMeta
+        //nodeCollisionFaceMeta = new Float32Array(textureDimNodeCollisions*textureDimNodeCollisions*4);
+        
+        // facesAreHitMeta = new Float32Array(textureDimNodeFaces*textureDimNodes*8);// facesAreHitMeta = [node Index, -1, b, c, u, v, w, d]  where abc are the triangle you are on, uvw barycentric coords, d penetration depth
         nominalTriangles = new Float32Array(textureDimFaces*textureDimFaces*4);
         nodeCreaseMeta = new Float32Array(textureDimNodeCreases*textureDimNodeCreases*4);
         creaseMeta2 = new Float32Array(textureDimCreases*textureDimCreases*4);
@@ -958,8 +940,24 @@ function initDynamicSolver(globals){
             lastTheta[i*4+3] = creases[i].getNormal2Index();
         }
 
-        
-        //console.log("Nodefacemeta is: ", nodeFaceMeta)
+        // populate meta2 first pair of entries: [nodeFaceMetaIndex numFace, nodeCollMetaIndex , numCollFaces]
+        // and nodeFaceMeta: [FaceIndex, a, b, c]
+        var index = 0;
+        for (var i=0;i<nodes.length;i++){ // node i
+            meta2[4*i] = index;
+            var numFaces = nodeFaces[i].length;
+            meta2[4*i+1] = numFaces;
+            for (var j=0;j<numFaces;j++){ // face j
+                var _index = (index+j)*4;
+                var face = faces[nodeFaces[i][j]]; // nodeFaces[i][j] is the index of what face we are on
+                nodeFaceMeta[_index] = nodeFaces[i][j];
+                nodeFaceMeta[_index+1] = face[0] == i ? -1 : face[0];
+                nodeFaceMeta[_index+2] = face[1] == i ? -1 : face[1];
+                nodeFaceMeta[_index+3] = face[2] == i ? -1 : face[2];
+            }
+            index+=numFaces;
+        }
+
 
         [meta2, nodeFaceMeta, nodeCollisionFaceMeta] = getNodeFaceCollisionMeta(positions, meta2, nodeFaceMeta, nodeCollisionFaceMeta);
         getEdgeEdgeCollisionMeta(positions);

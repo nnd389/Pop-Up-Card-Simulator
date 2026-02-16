@@ -204,13 +204,13 @@
         uniform sampler2D u_normals;
         uniform sampler2D u_theta;//[theta, z, normal1Index, normal2Index]
         uniform sampler2D u_creaseGeo;//[h1, h2, coef1, coef2]
-        uniform sampler2D u_meta2;//[nodesFaceIndex, numFaces] // Appended [nodeCollisionFaceIndex, numFacesColl] to the end of meta2
+        uniform sampler2D u_meta2;//[nodesFaceIndex, numFaces, nodeCollisionFaceIndex, numFacesColl]
         uniform sampler2D u_nodeFaceMeta;//[faceIndex, a, b, c]
         uniform sampler2D u_nodeCollisionFaceMeta;//[faceIndex, a, b, c] + [node index, u, v, w]
         uniform sampler2D u_nominalTriangles;//[angleA, angleB, angleC]
         uniform bool u_calcFaceStrain;
 
-        float collStrength = 0.1;
+        float collStrength = 0.001;
 
         vec4 getFromArray(float index1D, vec2 dimensions, sampler2D tex){
             vec2 index = vec2(mod(index1D, dimensions.x)+0.5, floor(index1D/dimensions.x)+0.5);
@@ -349,13 +349,8 @@
             for (int j=0;j<100;j++){//for all faces (up to 100, had to put a const int in here)
                 if (j >= int(meta2[1])) break;
 
-                vec4 faceMeta = getFromArray(meta2[0]+float(j) * 2.0, u_textureDimNodeFaces, u_nodeFaceMeta);//[face index, a, b, c]
-                vec4 BaryMeta = getFromArray(meta2[0] + float(j) * 2.0 + 1.0, u_textureDimNodeFaces, u_nodeFaceMeta);//[u, -, -, -]
+                vec4 faceMeta = getFromArray(meta2[0]+float(j), u_textureDimNodeFaces, u_nodeFaceMeta);//[faceIndex, a, b, c]
                 vec3 nominalAngles = getFromArray(faceMeta[0], u_textureDimFaces, u_nominalTriangles).xyz;//[angA, angB, angC]
-
-                // get barycentric coord (just the one)
-                float bary = BaryMeta[0];
-
 
                 int faceIndex = 0;
                 if (faceMeta[2] < 0.0) faceIndex = 1;
@@ -399,8 +394,6 @@
                     force -= anglesDiff[1]*normalCrossAB;
                     force += anglesDiff[2]*normalCrossAC;
 
-                    force += bary * collStrength * normal; // for node face collisions
-
                 } else if (faceIndex == 1){
                     vec3 normalCrossAB = cross(normal, ab)/lengthAB;
                     vec3 normalCrossBC = cross(normal, bc)/lengthBC;
@@ -409,16 +402,12 @@
                     if (u_calcFaceStrain) nodeError += abs((nominalAngles[1]-angles[1])/nominalAngles[1]);
                     force -= anglesDiff[2]*normalCrossBC;
 
-                    force += bary * collStrength * normal; // for node face collisions
-
                 } else if (faceIndex == 2){
                     vec3 normalCrossAC = cross(normal, ac)/lengthAC;
                     vec3 normalCrossBC = cross(normal, bc)/lengthBC;
                     force += anglesDiff[0]*normalCrossAC;
                     force -= anglesDiff[1]*normalCrossBC;
                     force += anglesDiff[2]*(normalCrossBC - normalCrossAC);
-
-                    force += bary * collStrength  * normal; // for node face collisions
 
                     if (u_calcFaceStrain) nodeError += abs((nominalAngles[2]-angles[2])/nominalAngles[2]);
                 }
@@ -433,49 +422,19 @@
             for (int j=0;j<100;j++){//for all nodes (up to 100, had to put a const int in here)
                 if (j >= int(meta2[3])) break;
 
-                // vec4 collisionFaceMeta = getFromArray(meta2[2]+float(j), u_textureDimNodeCollisions, u_nodeCollisionFaceMeta);//[face index, a, b, c] OLD
-                // vec3 a = getPosition(collisionFaceMeta[1]);
-                // vec3 b = getPosition(collisionFaceMeta[2]);
-                // vec3 c = getPosition(collisionFaceMeta[3]);
-                // nodeCollisionFaceMeta = [faceIndex, a, b, c] + [node index, u, v, w]
+                vec4 collisionFaceMeta = getFromArray(meta2[2]+float(j), u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
+                vec3 a = getPosition(collisionFaceMeta[1]);
+                vec3 b = getPosition(collisionFaceMeta[2]);
+                vec3 c = getPosition(collisionFaceMeta[3]);
+                // nodeCollisionFaceMeta = [faceIndex, a, b, c]
                 
-
-                vec4 collisionFaceMeta = getFromArray(meta2[2] + float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta);
-                vec4 collisionBaryMeta = getFromArray(meta2[2] + float(j) * 2.0 + 1.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta);
-
-                float faceIndex = collisionFaceMeta.x;
-
-                vec3 a = getPosition(collisionFaceMeta.y);
-                int ai = int(collisionFaceMeta.y);
-                vec3 b = getPosition(collisionFaceMeta.z);
-                int bi = int(collisionFaceMeta.z);
-                vec3 c = getPosition(collisionFaceMeta.w);
-                int ci = int(collisionFaceMeta.w);
-
-                int nodeIndex = int(gl_FragCoord.y - 0.5) * int(u_textureDim.x) + int(gl_FragCoord.x - 0.5); // confusing but ok
-                int collidingNode = int(collisionBaryMeta.x);
-                float u = collisionBaryMeta.y;
-                float v = collisionBaryMeta.z;
-                float w = collisionBaryMeta.w;
-
 
                 vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
                 // gonna have problems with direction, sometimes want normal = -normal...
 
                 if (int(meta2[3]) >= 1){
+                    // try adding * depth - but I think depth is still zero - not populated correctly
                     force -= collStrength * normal;
-
-                    if (nodeIndex == ai){
-                        //force += -u * 0.001 * normal;
-                    } else if(nodeIndex == bi){
-                        //force += -v * 0.001 * normal;
-                    } else if (nodeIndex == ci){
-                        //force += -w * 0.001 * normal;
-                    } else if (nodeIndex == collidingNode){
-                        //force += 0.001 * normal;
-                    }
-
-                
 
 
                     // CONTINUE HERE: next up is using barycentric coords to apply forces to the face!!
