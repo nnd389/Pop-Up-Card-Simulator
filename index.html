@@ -152,6 +152,123 @@
         }
     </script>
 
+     <script id="collisionVelocityCalcShader" type="x-shader/x-fragment">
+        precision mediump float;
+        uniform vec2 u_textureDim;
+        uniform vec2 u_textureDimNodeCollisions;
+        uniform vec2 u_textureDimFaces;
+        uniform vec2 u_textureDimNodeFaces;
+        uniform vec2 u_textureDimNodeFaces2;
+        uniform float u_dt;
+        uniform sampler2D u_lastPosition;
+        uniform sampler2D u_lastVelocity;
+        uniform sampler2D u_originalPosition;
+        uniform sampler2D u_externalForces;
+        uniform sampler2D u_mass;
+        uniform sampler2D u_meta3;// [nodeCollisionFaceMetaIndex, numFaces, facesAreHitMetaIndex, numfaces]
+        uniform sampler2D u_normals;
+        uniform sampler2D u_nodeCollisionFaceMeta;//[faceIndex, a, b, c, u, v, w, d] 
+        uniform sampler2D u_facesAreHitMeta;//[faceIndex, a, b, c, u, v, w, d] 
+
+        vec4 getFromArray(float index1D, vec2 dimensions, sampler2D tex){
+            vec2 index = vec2(mod(index1D, dimensions.x)+0.5, floor(index1D/dimensions.x)+0.5);
+            vec2 scaledIndex = index/dimensions;
+            return texture2D(tex, scaledIndex);
+        }
+
+        vec3 getPosition(float index1D){
+            vec2 index = vec2(mod(index1D, u_textureDim.x)+0.5, floor(index1D/u_textureDim.x)+0.5);
+            vec2 scaledIndex = index/u_textureDim;
+            return texture2D(u_lastPosition, scaledIndex).xyz + texture2D(u_originalPosition, scaledIndex).xyz;
+        }
+
+
+
+        void main(){
+            vec2 fragCoord = gl_FragCoord.xy;
+            vec2 scaledFragCoord = fragCoord/u_textureDim;
+
+            float nodeError = 0.0; // FIX node error
+
+            vec2 mass = texture2D(u_mass, scaledFragCoord).xy;
+            if (mass[1] == 1.0){//fixed
+                gl_FragColor = vec4(0.0);
+                return;
+            }
+            vec3 force = texture2D(u_externalForces, scaledFragCoord).xyz;
+            vec3 lastPosition = texture2D(u_lastPosition, scaledFragCoord).xyz;
+            vec3 lastVelocity = texture2D(u_lastVelocity, scaledFragCoord).xyz;
+            vec3 originalPosition = texture2D(u_originalPosition, scaledFragCoord).xyz;
+            vec4 meta3 = texture2D(u_meta3, scaledFragCoord);
+
+
+            // start reacting NODES to collisions!!!
+            for (int j=0;j<100;j++){//for all nodes (up to 100, had to put a const int in here)
+                if (j >= int(meta3[1])) break;
+
+                vec4 collisionFaceMeta = getFromArray(meta3[0]+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
+                vec3 a = getPosition(collisionFaceMeta[1]);
+                vec3 b = getPosition(collisionFaceMeta[2]);
+                vec3 c = getPosition(collisionFaceMeta[3]);
+
+                vec4 collisionBaryMeta = getFromArray(meta3[0]+float(j) * 2.0 + 1.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[u, v, w, d]
+                float u = collisionBaryMeta.x;
+                float v = collisionBaryMeta.y;
+                float w = collisionBaryMeta.z;
+                float d = collisionBaryMeta.w;
+
+                vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
+                // gonna have problems with direction, sometimes want normal = -normal...
+
+                //force += 0.001 * normal; // this will later be changed to (u+v+w)*d*normal, I know u+v+w = 1 but still
+                //force += 0.01;
+            }
+
+
+
+            // start having the faces react to collisions
+            for (int j=0;j<100;j++){//for all faces (up to 100, had to put a const int in here)
+                if (j >= int(meta3[3])) break;
+
+                vec4 faceHitMeta = getFromArray(meta3[2] + float(j) * 2.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[faceHitIndex, -1, b, c]
+                vec4 faceBaryMeta = getFromArray(meta3[2] + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d]
+
+                vec3 normal = getFromArray(faceHitMeta[0], u_textureDimFaces, u_normals).xyz;
+
+                //force += 0.1;
+
+                int faceHitIndex = 0; // a
+                if (faceHitMeta[2] < 0.0) faceHitIndex = 1; // b its nver switching, facehitmeta is wrong 
+                if (faceHitMeta[3] < 0.0) faceHitIndex = 2; // c
+                // CONTINUE HERE: facehitmeta is never switching
+
+                float u = faceBaryMeta.x;
+                float v = faceBaryMeta.y;
+                float w = faceBaryMeta.z;
+                float d = faceBaryMeta.w;
+
+                if (faceHitIndex == 0){//a
+                    //force += 0.001 * u * normal;
+                    //force += 0.001;
+                } else if (faceHitIndex == 1){
+                    //force += 0.001 * v * normal;
+                    //force += 0.1;
+                } else if (faceHitIndex == 2){ // WHY IS IT NOT GOING HERE
+                    force += 0.001 * w * normal;
+                    force += 0.1;
+                }
+                
+            }
+
+
+            
+
+
+            vec3 velocity = force*u_dt/mass[0] + lastVelocity; // FIX: might need to change this
+            gl_FragColor = vec4(velocity,nodeError);
+        }
+    </script>
+
     <script id="velocityCalcVerletShader" type="x-shader/x-fragment">
         precision mediump float;
         uniform vec2 u_textureDim;
@@ -184,14 +301,10 @@
         uniform vec2 u_textureDimCreases;
         uniform vec2 u_textureDimNodeCreases;
         uniform vec2 u_textureDimNodeFaces;
-        uniform vec2 u_textureDimNodeCollisions;
         uniform float u_creasePercent;
         uniform float u_dt;
         uniform float u_axialStiffness;
         uniform float u_faceStiffness;
-        uniform float u_collisionStiffness;
-        uniform float u_collisionThickness;
-        uniform float u_collisionDamping;
         uniform sampler2D u_lastPosition;
         uniform sampler2D u_lastVelocity;
         uniform sampler2D u_originalPosition;
@@ -204,13 +317,10 @@
         uniform sampler2D u_normals;
         uniform sampler2D u_theta;//[theta, z, normal1Index, normal2Index]
         uniform sampler2D u_creaseGeo;//[h1, h2, coef1, coef2]
-        uniform sampler2D u_meta2;//[nodesFaceIndex, numFaces, nodeCollisionFaceIndex, numFacesColl]
+        uniform sampler2D u_meta2;//[nodesFaceIndex, numFaces, nodeCollisionFaceIndex, numFacesColl] + [facesAreHitMetaIndex, numFaces, -, -]
         uniform sampler2D u_nodeFaceMeta;//[faceIndex, a, b, c]
-        uniform sampler2D u_nodeCollisionFaceMeta;//[faceIndex, a, b, c] + [node index, u, v, w]
         uniform sampler2D u_nominalTriangles;//[angleA, angleB, angleC]
         uniform bool u_calcFaceStrain;
-
-        float collStrength = 0.001;
 
         vec4 getFromArray(float index1D, vec2 dimensions, sampler2D tex){
             vec2 index = vec2(mod(index1D, dimensions.x)+0.5, floor(index1D/dimensions.x)+0.5);
@@ -393,7 +503,6 @@
                     if (u_calcFaceStrain) nodeError += abs((nominalAngles[0]-angles[0])/nominalAngles[0]);
                     force -= anglesDiff[1]*normalCrossAB;
                     force += anglesDiff[2]*normalCrossAC;
-
                 } else if (faceIndex == 1){
                     vec3 normalCrossAB = cross(normal, ab)/lengthAB;
                     vec3 normalCrossBC = cross(normal, bc)/lengthBC;
@@ -401,52 +510,17 @@
                     force += anglesDiff[1]*(normalCrossAB + normalCrossBC);
                     if (u_calcFaceStrain) nodeError += abs((nominalAngles[1]-angles[1])/nominalAngles[1]);
                     force -= anglesDiff[2]*normalCrossBC;
-
                 } else if (faceIndex == 2){
                     vec3 normalCrossAC = cross(normal, ac)/lengthAC;
                     vec3 normalCrossBC = cross(normal, bc)/lengthBC;
                     force += anglesDiff[0]*normalCrossAC;
                     force -= anglesDiff[1]*normalCrossBC;
                     force += anglesDiff[2]*(normalCrossBC - normalCrossAC);
-
                     if (u_calcFaceStrain) nodeError += abs((nominalAngles[2]-angles[2])/nominalAngles[2]);
                 }
 
             }
             if (u_calcFaceStrain) nodeError /= meta2[1];
-
-
-
-
-            // start reacting to collisions!!!
-            for (int j=0;j<100;j++){//for all nodes (up to 100, had to put a const int in here)
-                if (j >= int(meta2[3])) break;
-
-                vec4 collisionFaceMeta = getFromArray(meta2[2]+float(j), u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
-                vec3 a = getPosition(collisionFaceMeta[1]);
-                vec3 b = getPosition(collisionFaceMeta[2]);
-                vec3 c = getPosition(collisionFaceMeta[3]);
-                // nodeCollisionFaceMeta = [faceIndex, a, b, c]
-                
-
-                vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
-                // gonna have problems with direction, sometimes want normal = -normal...
-
-                if (int(meta2[3]) >= 1){
-                    // try adding * depth - but I think depth is still zero - not populated correctly
-                    force -= collStrength * normal;
-
-
-                    // CONTINUE HERE: next up is using barycentric coords to apply forces to the face!!
-                    // progress has been made!! we are officially on the gpu and correnctly adding forces when they the node is colliding!
-                    // problems: we are adding the wrong force, and the force doesnt seem to stop adding when we are no longer colliding
-                    // Note to Nina: if you end up moving calculations to the gpu: you can go back to the old (halved length)
-                    // of nodefacecollisionmeta, replace the faceIndex entry with the projected position of the collision, and recals barycentric coords in the shader
-                }
-            }
-
-
-
 
             vec3 velocity = force*u_dt/mass[0] + lastVelocity;
             gl_FragColor = vec4(velocity,nodeError);
@@ -1204,8 +1278,29 @@
         <!--</label>-->
     <!--</div><br/><br/>-->
     <a href="#" id="showAdvancedOptions">Show Advanced Options</a><br/><br/>
+    <button id="toggleCollisions">Enable Collisions are ON</button><br/><br/>
 
 </div>
+
+
+<script> // this should be moved to globals I think
+let collisionsEnabled = true;  // default ON
+
+const toggleBtn = document.getElementById("toggleCollisions");
+
+// Set initial label correctly
+toggleBtn.textContent = "Enable Collisions are ON";
+
+toggleBtn.addEventListener("click", function () {
+    collisionsEnabled = !collisionsEnabled;
+    console.log("Collisions are", collisionsEnabled ? "ON" : "OFF");
+
+    toggleBtn.textContent =
+        collisionsEnabled
+            ? "Enable Collisions are ON"
+            : "Enable Collisions are OFF";
+});
+</script>
 
 <div id="controls">
     <a href="#" id="hideAdvancedOptions">Hide Advanced Options</a><br/><br/>

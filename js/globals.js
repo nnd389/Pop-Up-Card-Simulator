@@ -55,8 +55,6 @@ function initGlobals(){
         panelStiffness: 0.7,
         glueStiffness: 0.7,
         faceStiffness: 0.2,
-        collisionStiffness: 0.7,
-        collisionThickness: 0.01,
 
         //dynamic sim settings
         percentDamping: 0.45,//damping ratio
