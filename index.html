@@ -160,6 +160,7 @@
         uniform vec2 u_textureDimNodeFaces;
         uniform vec2 u_textureDimNodeFaces2;
         uniform float u_dt;
+        uniform float u_nodeCollisionStiffness;
         uniform sampler2D u_lastPosition;
         uniform sampler2D u_lastVelocity;
         uniform sampler2D u_originalPosition;
@@ -196,22 +197,24 @@
                 return;
             }
             vec3 force = texture2D(u_externalForces, scaledFragCoord).xyz;
+            vec4 debug = vec4(0.0, 0.0, 0.0, 1.0);
             vec3 lastPosition = texture2D(u_lastPosition, scaledFragCoord).xyz;
             vec3 lastVelocity = texture2D(u_lastVelocity, scaledFragCoord).xyz;
             vec3 originalPosition = texture2D(u_originalPosition, scaledFragCoord).xyz;
             vec4 meta3 = texture2D(u_meta3, scaledFragCoord);
+            float nodeCollisionStiffness = u_nodeCollisionStiffness;
 
 
             // start reacting NODES to collisions!!!
             for (int j=0;j<100;j++){//for all nodes (up to 100, had to put a const int in here)
                 if (j >= int(meta3[1])) break;
 
-                vec4 collisionFaceMeta = getFromArray(meta3[0]+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
+                vec4 collisionFaceMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
                 vec3 a = getPosition(collisionFaceMeta[1]);
                 vec3 b = getPosition(collisionFaceMeta[2]);
                 vec3 c = getPosition(collisionFaceMeta[3]);
 
-                vec4 collisionBaryMeta = getFromArray(meta3[0]+float(j) * 2.0 + 1.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[u, v, w, d]
+                vec4 collisionBaryMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0 + 1.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[u, v, w, d]
                 float u = collisionBaryMeta.x;
                 float v = collisionBaryMeta.y;
                 float w = collisionBaryMeta.z;
@@ -220,52 +223,67 @@
                 vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
                 // gonna have problems with direction, sometimes want normal = -normal...
 
-                //force += 0.001 * normal; // this will later be changed to (u+v+w)*d*normal, I know u+v+w = 1 but still
-                //force += 0.01;
-            }
+                //force -= normal; // this will later be changed to (u+v+w)*d*normal, I know u+v+w = 1 but still
+                force -= (u+v+w)*normal*nodeCollisionStiffness/d;
 
+                
+                //vec4 debug = vec4(1.0, 1.0, 1.0, 1.0);
+                //gl_FragColor = debug; return; // node 1
+            }
 
 
             // start having the faces react to collisions
             for (int j=0;j<100;j++){//for all faces (up to 100, had to put a const int in here)
                 if (j >= int(meta3[3])) break;
 
-                vec4 faceHitMeta = getFromArray(meta3[2] + float(j) * 2.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[faceHitIndex, -1, b, c]
-                vec4 faceBaryMeta = getFromArray(meta3[2] + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d]
+                // CHECK: I was previously using: meta3[2] + float(j) * 2.0
+                // but updated eveything to use meta3[2]*2.0 + float(j) * 2.0
+                // recall that each texel is length 4, so each row has two texels
+
+
+                vec4 faceHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[faceHitIndex, -1, b, c]
+                vec4 faceBaryMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d]
 
                 vec3 normal = getFromArray(faceHitMeta[0], u_textureDimFaces, u_normals).xyz;
 
-                //force += 0.1;
-
                 int faceHitIndex = 0; // a
-                if (faceHitMeta[2] < 0.0) faceHitIndex = 1; // b its nver switching, facehitmeta is wrong 
+                if (faceHitMeta[2] < 0.0) faceHitIndex = 1; // b 
                 if (faceHitMeta[3] < 0.0) faceHitIndex = 2; // c
-                // CONTINUE HERE: facehitmeta is never switching
+
+                
+                
+
 
                 float u = faceBaryMeta.x;
                 float v = faceBaryMeta.y;
                 float w = faceBaryMeta.z;
                 float d = faceBaryMeta.w;
+                // uvw - down and to the right 
+                // uwv - up and to the left
+                // vuw - down and to the right
+                // vwu - up and to the left
+                // wuv - up and to the left slowly
+                // wvu - down and to the right slowly 
 
-                if (faceHitIndex == 0){//a
-                    //force += 0.001 * u * normal;
-                    //force += 0.001;
+                if (faceHitIndex == 0){
+                    force += u*normal*nodeCollisionStiffness/d;
+                    //vec4 debug0 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
+                    //gl_FragColor = debug0; return; // CONTINUE HERE
+
+                } else if (faceHitIndex == 2){ // CRAZZZYYYY order of the if statements matter?!?!?? must be 0 -> 2 -> 1
+                    force += v*normal*nodeCollisionStiffness/d;
+                    //vec4 debug1 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
+                    //gl_FragColor = debug1; return;
                 } else if (faceHitIndex == 1){
-                    //force += 0.001 * v * normal;
-                    //force += 0.1;
-                } else if (faceHitIndex == 2){ // WHY IS IT NOT GOING HERE
-                    force += 0.001 * w * normal;
-                    force += 0.1;
+                    force += w*normal*nodeCollisionStiffness/d;
+                    //vec4 debug2 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
+                    //gl_FragColor = debug2; return;
                 }
-                
             }
 
 
-            
-
-
             vec3 velocity = force*u_dt/mass[0] + lastVelocity; // FIX: might need to change this
-            gl_FragColor = vec4(velocity,nodeError);
+            gl_FragColor = vec4(velocity,nodeError); 
         }
     </script>
 
@@ -317,7 +335,7 @@
         uniform sampler2D u_normals;
         uniform sampler2D u_theta;//[theta, z, normal1Index, normal2Index]
         uniform sampler2D u_creaseGeo;//[h1, h2, coef1, coef2]
-        uniform sampler2D u_meta2;//[nodesFaceIndex, numFaces, nodeCollisionFaceIndex, numFacesColl] + [facesAreHitMetaIndex, numFaces, -, -]
+        uniform sampler2D u_meta2;//[nodesFaceIndex, numFaces, -, -]
         uniform sampler2D u_nodeFaceMeta;//[faceIndex, a, b, c]
         uniform sampler2D u_nominalTriangles;//[angleA, angleB, angleC]
         uniform bool u_calcFaceStrain;
@@ -1367,6 +1385,10 @@ toggleBtn.addEventListener("click", function () {
             </div>
             <div class="sliderInput" id="glueStiffness">
                 <span class="label-slider">Glue Spring Strength : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
+                <input value="" placeholder="" class="float form-control" type="text">
+            </div>
+            <div class="sliderInput" id="nodeCollisionStiffness">
+                <span class="label-slider">Node Collision Strength : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
                 <input value="" placeholder="" class="float form-control" type="text">
             </div>
             <div class="sliderInput" id="percentDamping">

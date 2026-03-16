@@ -168,27 +168,19 @@ function initDynamicSolver(globals){
         } else {//euler
             
 
-
-
             // don't forget to put all this in the verlet option as well
-            // positions might be one timestep off
             // up in solve theres a function called updateMaterials, similar to what you are doing here, it updates beammeta (not sure if it updates every frame tho)
             // might want to move some of this to solve instead
             if (collisionsEnabled) {
                 gpuMath.setProgram("collisionVelocityCalc");
                 gpuMath.setSize(textureDim, textureDim);
 
+                [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions);
 
-                [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions, meta3, nodeCollisionFaceMeta, facesAreHitMeta);
-
-                // facesarehitmeta needs to be sorted by NODE! not FACE! this is extremely important!!
-
-                // if (meta3[5] >=1 ){
+                // if (meta3[3] > 0){
                 //     console.log("meta3 is: ", meta3);
-                //     console.log("nodeCollisionFaceMeta is: ", nodeCollisionFaceMeta);
-                //     console.log("facesAreHitMeta_ is: ", facesAreHitMeta); 
-                //     console.log("meta2 is: ", meta2);
-                //     console.log("nodefacemeta is: ", nodeFaceMeta);
+                //     console.log("nodeCollisionFaceMeta is: ", nodeCollisionFaceMeta)
+                //     console.log("facesarehitmeta is: ", facesAreHitMeta)
                 // }
 
                 gpuMath.initTextureFromData("u_nodeCollisionFaceMeta", textureDimNodeCollisions, textureDimNodeCollisions, "FLOAT", nodeCollisionFaceMeta, true);
@@ -199,9 +191,48 @@ function initDynamicSolver(globals){
                 gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionFaceMeta", 7, "1i");
                 gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); 
 
-                gpuMath.step("collisionVelocityCalc", ["u_lastPosition", "u_lastVelocity", "u_originalPosition", "u_externalForces", "u_mass", "u_meta3", "u_normals", "u_nodeCollisionFaceMeta", "u_facesAreHitMeta"], "u_velocity") // FIX: add in "u_beamCollisionMeta" when ready
+                gpuMath.step("collisionVelocityCalc", ["u_lastPosition", "u_lastVelocity", "u_originalPosition", "u_externalForces", "u_mass", "u_meta3", "u_normals", "u_nodeCollisionFaceMeta", "u_facesAreHitMeta"], "u_velocity"); // FIX: add in "u_beamCollisionMeta" when ready
+                
+
+                // FOR DEBUGGING ONLY
+                // var xsum = 0;
+                // var ysum = 0;
+                // var zsum = 0;
+                
+                // if (meta3[3] > 0){
+                //     // DEBUG: read back u_velocity (RGBA = whatever shader wrote, e.g. u,v,w,d)
+                //     const vectorLength = 4;
+                //     gpuMath.setProgram("packToBytes");
+                //     gpuMath.setUniformForProgram("packToBytes", "u_vectorLength", vectorLength, "1f");
+                //     gpuMath.setUniformForProgram("packToBytes", "u_floatTextureDim", [textureDim, textureDim], "2f");
+                //     gpuMath.setSize(textureDim * vectorLength, textureDim);
+                //     gpuMath.step("packToBytes", ["u_velocity"], "outputBytes");
+
+                //     if (gpuMath.readyToRead()) {
+                //         const numPixels = nodes.length * vectorLength;
+                //         const height = Math.ceil(numPixels / (textureDim * vectorLength));
+                //         const pixels = new Uint8Array(height * textureDim * 4 * vectorLength);
+                //         gpuMath.readPixels(0, 0, textureDim * vectorLength, height, pixels);
+                //         const parsed = new Float32Array(pixels.buffer);
+
+                //         // print first few nodes
+                //         for (let i = 0; i < nodes.length; i++) {
+                //             xsum += parsed[i*4];
+                //             ysum += parsed[i*4+1];
+                //             zsum += parsed[i*4+2];
+
+                //             console.log("u_velocity node", i, ": ", parsed[i*4], parsed[i*4 + 1], parsed[i*4 + 2], parsed[i*4 + 3]);
+                //         }
+                //     }
+
+                //     console.log("xsum is: ", xsum)
+                //     console.log("ysum is: ", ysum)
+                //     console.log("zsum is: ", zsum)
+                // }
+                // DONE
+                
+                
                 gpuMath.swapTextures("u_velocity", "u_lastVelocity"); // if you put collisionvelocitycalc inbetween the other two neep to put swaptextures ontop
-                // CHECK: what textures are you gonna need to load in 
             }
             
 
@@ -327,8 +358,6 @@ function initDynamicSolver(globals){
         gpuMath.initTextureFromData("u_meta", textureDim, textureDim, "FLOAT", meta, true);
         gpuMath.initTextureFromData("u_meta2", textureDim, textureDim, "FLOAT", meta2, true);
         gpuMath.initTextureFromData("u_meta3", textureDim, textureDim, "FLOAT", meta3, true);
-        gpuMath.initTextureFromData("u_nominalTrinagles", textureDimFaces, textureDimFaces, "FLOAT", nominalTriangles, true);
-        // FIX: trinagles hehe
         gpuMath.initTextureFromData("u_nodeCreaseMeta", textureDimNodeCreases, textureDimNodeCreases, "FLOAT", nodeCreaseMeta, true);
         gpuMath.initTextureFromData("u_creaseMeta2", textureDimCreases, textureDimCreases, "FLOAT", creaseMeta2, true);
         gpuMath.initTextureFromData("u_nodeFaceMeta", textureDimNodeFaces, textureDimNodeFaces, "FLOAT", nodeFaceMeta, true);
@@ -338,7 +367,7 @@ function initDynamicSolver(globals){
         gpuMath.initTextureFromData("u_nominalTriangles", textureDimFaces, textureDimFaces, "FLOAT", nominalTriangles, true);
         //CHCK: what are the width and height of these?
         gpuMath.initTextureFromData("u_nodeCollisionFaceMeta", textureDimNodeCollisions, textureDimNodeCollisions, "FLOAT", nodeCollisionFaceMeta, true);
-        gpuMath.initTextureFromData("u_facesAreHitMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", facesAreHitMeta, true); // FIX: width and height might need to be sqaure?
+        gpuMath.initTextureFromData("u_facesAreHitMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", facesAreHitMeta, true);
 
         gpuMath.createProgram("positionCalc", vertexShader, document.getElementById("positionCalcShader").text);
         gpuMath.setUniformForProgram("positionCalc", "u_velocity", 0, "1i");
@@ -355,13 +384,14 @@ function initDynamicSolver(globals){
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_meta3", 5, "1i");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_normals", 6, "1i");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionFaceMeta", 7, "1i");
-        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); // might need to add more CHECK
+        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); 
         //gpuMath.setUniformForProgram("collisionVelocityCalc", "u_beamCollisionMeta", 9, "1i");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDim", [textureDim, textureDim], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeCollisions", [textureDimNodeCollisions, textureDimNodeCollisions], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeFaces", [textureDimNodeFaces, textureDimNodeFaces], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeFaces2", [textureDimNodeFaces2, textureDimNodeFaces2], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimFaces", [textureDimFaces, textureDimFaces], "2f");
+        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionStiffness", globals.nodeCollisionStiffness, "1f");
 
 
         gpuMath.createProgram("velocityCalcVerlet", vertexShader, document.getElementById("velocityCalcVerletShader").text);
@@ -508,6 +538,8 @@ function initDynamicSolver(globals){
         globals.gpuMath.initTextureFromData("u_beamMeta", textureDimEdges, textureDimEdges, "FLOAT", beamMeta, true);
 
         if (programsInited) {
+            globals.gpuMath.setProgram("collisionVelocityCalc");
+            globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionStiffness", globals.nodeCollisionStiffness, "1f");
             globals.gpuMath.setProgram("velocityCalc");
             globals.gpuMath.setUniformForProgram("velocityCalc", "u_axialStiffness", globals.axialStiffness, "1f");
             globals.gpuMath.setUniformForProgram("velocityCalc", "u_faceStiffness", globals.faceStiffness, "1f");
@@ -587,21 +619,21 @@ function initDynamicSolver(globals){
         globals.gpuMath.setUniformForProgram("positionCalcVerlet", "u_creasePercent", percent, "1f");
     }
 
-    function getNodeFaceCollisionMeta(currentPositions, meta3_, nodeCollisionFaceMeta_, facesAreHitMeta_){ 
-        // FIX: we don't need any inputs besides currentPositions, since they are all re-written anyways
-        // populate nodeCollisionFaceMeta = [faceIndex, a, b, c, u, v, w, d] 
-        // populate facesAreHitMeta = [faceIndex, -1, b, c, u, v, w, d] 
+    function getNodeFaceCollisionMeta(currentPositions){ 
+        // meta3 = [nodeCollisionFaceMetaIndex, numCollFaces, facesAreHitMetaIndex, numFacesHit]
+        // nodeCollisionFaceMeta = [faceIndex, a, b, c, u, v, w, d] 
+        // facesAreHitMeta = [faceIndex, -1, b, c, u, v, w, d] 
         
+        meta3_ = new Float32Array(textureDim*textureDim*4);
+        nodeCollisionFaceMeta_ = new Float32Array(textureDimNodeCollisions*textureDimNodeCollisions*4);        
+        facesAreHitMeta_ = new Float32Array(textureDimNodeFaces2*textureDimNodeFaces2*4);
 
         var fillFacesAreHitMeta_ = [];
-        //returnFacesAreHitMeta_ = new Float32Array(textureDimNodeFaces2*textureDimNodeFaces2*4);
-        fillMeta = []; // [facesAreHitMetaIndex, numFaces]
-        sort = []; // this will be used to sort facesareHitMeta later
-        //FIX: theres a problem here, facesarehitmeta is not being updated correctly 
-
+        var sort = []; // this will be used to sort facesareHitMeta later
         var index = 0; // index is faceGroupIndex
         var _index = 0;
         var facesAreHitIndex = 0;
+
         for (var i=0;i<nodes.length;i++){ //node i
             meta3_[4*i+0] = index;
             var numFaceColl = 0;
@@ -624,7 +656,8 @@ function initDynamicSolver(globals){
                     var distWP = (W[0]-P[0])*(W[0]-P[0]) + (W[1]-P[1])*(W[1]-P[1]) + (W[2]-P[2])*(W[2]-P[2]); // FIX: make this signed distance - would help a lot distWP is currently always positive, so very close to zero
                     distWP = Math.sqrt(distWP);
 
-                    if (isInside == true && distWP <= 0.02){ // node i is officially colliding with face j
+                    if (isInside == true && distWP <= 0.1){ // node i is officially colliding with face j
+                        console.log("Node ", i, " is colliding with face ", j, "!!")
                         _index = (index + numFaceColl) * 2 * 4; // _index is the texel index,    _index + k is the element index
 
                         nodeCollisionFaceMeta_[_index] = j; // FaceIndex
@@ -635,7 +668,7 @@ function initDynamicSolver(globals){
                         nodeCollisionFaceMeta_[_index+4] = u; // u
                         nodeCollisionFaceMeta_[_index+5] = v; // v
                         nodeCollisionFaceMeta_[_index+6] = w; // w
-                        nodeCollisionFaceMeta_[_index+7] = distWP; // d FIX: change to sqrt(distwp)
+                        nodeCollisionFaceMeta_[_index+7] = distWP; // d
 
                         numFaceColl += 1;
 
@@ -648,12 +681,11 @@ function initDynamicSolver(globals){
                             fillFacesAreHitMeta_.push(u);
                             fillFacesAreHitMeta_.push(v);
                             fillFacesAreHitMeta_.push(w);
-                            fillFacesAreHitMeta_.push(distWP); // FIX: is there a way to fill facesarehitmeta using [] indexing here? instead of doing this and populating later?
+                            fillFacesAreHitMeta_.push(distWP); 
                             sort.push(faces[j][n]);
 
                             facesAreHitIndex++;
                         }
-                        console.log("Node ", i, " is colliding with face ", j, "!!")
                     }
                 }
             }
@@ -681,14 +713,10 @@ function initDynamicSolver(globals){
 
 
         // populate second half of meta3 using sort
-        // CHECK: I wrote this and I hope it's right
         var index = 0;
         var sI = 0;
         var count = 0
         for (var i=0; i<nodes.length; i++){
-            // sort = [0 2 3]
-            // so meta3 = [0 1,  1 0,  1 1,  2, 1]
-            //.             0.    1.    2.    3
             meta3_[4*i+2] = index;
             if (i==sort[sI]){
                 count = sort.filter(n => n === i).length; // count how many times i appears in sort
@@ -714,9 +742,9 @@ function initDynamicSolver(globals){
         const AC = sub(A,C);
         const N = cross(AB,AC);
 
-        const WA = sub(W, A);            // step 1: v = point of interest - origin
-        const dist = dot(WA, N)/dot(N, N);         // step 2: dist = v dotted with N (added normalization for N)
-        const P = sub(W, scale(dist,N)); // step 3: P = W - dist*N
+        const WA = sub(W, A);               // step 1: v = point of interest - origin
+        const dist = dot(WA, N)/dot(N, N);  // step 2: dist = v dotted with N (added normalization for N)
+        const P = sub(W, scale(dist,N));    // step 3: P = W - dist*N
 
         return P;
     }
@@ -880,7 +908,7 @@ function initDynamicSolver(globals){
             }
         }
         textureDimNodeFaces = calcTextureSize(numNodeFaces);
-        textureDimNodeFaces2 = calcTextureSize(numNodeFaces*2); // for facesAreHitMeta
+        textureDimNodeFaces2 = calcTextureSize(numNodeFaces*2*2); // for facesAreHitMeta
         textureDimNodeCollisions = calcTextureSize(faces.length*nodes.length*2); // for nodeCollisionFaceMeta
 
 
@@ -986,7 +1014,7 @@ function initDynamicSolver(globals){
 
 
 
-        [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions, meta3, nodeCollisionFaceMeta, facesAreHitMeta);
+        [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions);
         getEdgeEdgeCollisionMeta(positions);
 
         

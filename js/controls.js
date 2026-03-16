@@ -467,6 +467,11 @@ function initControls(globals){
         globals.materialHasChanged = true;
     });
 
+    setSliderInput("#nodeCollisionStiffness", globals.nodeCollisionStiffness, 0, 0.2, 0.005, function(val){
+        globals.nodeCollisionStiffness = val;
+        globals.materialHasChanged = true;
+    });
+
     setSliderInput("#percentDamping", globals.percentDamping, 0.01, 0.5, 0.01, function(val){
         globals.percentDamping = val;
         globals.materialHasChanged = true;
