@@ -11,15 +11,12 @@
    xmlns:svg="http://www.w3.org/2000/svg">
   <defs
      id="defs1" />
-  <g
-     id="layer1">
-    <path
-       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
-       d="M 63.636884,105.75844 100.00082,70.606636 138.04964,106.07313 97.879587,215.75934 Z"
-       id="path1" />
-    <path
-       style="fill:none;stroke:#ff0000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:0.99848944;stroke-dasharray:none"
-       d="M 63.563237,105.98435 137.9677,106.1918"
-       id="path2" />
-  </g>
+  <path
+     style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+     d="M 142.90239,125.83068 114.43493,95.563365 85.967465,125.79633 114.43493,195.75182 Z"
+     id="path1-3" />
+  <path
+     style="fill:none;stroke:#ff0000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+     d="m 86.172692,125.88249 56.713698,0.0892"
+     id="path1" />
 </svg>

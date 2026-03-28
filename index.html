@@ -202,7 +202,8 @@
             vec3 lastVelocity = texture2D(u_lastVelocity, scaledFragCoord).xyz;
             vec3 originalPosition = texture2D(u_originalPosition, scaledFragCoord).xyz;
             vec4 meta3 = texture2D(u_meta3, scaledFragCoord);
-            float nodeCollisionStiffness = u_nodeCollisionStiffness;
+            //float kNC = u_nodeCollisionStiffness;
+            float kNC = 1.0;
 
 
             // start reacting NODES to collisions!!!
@@ -218,16 +219,22 @@
                 float u = collisionBaryMeta.x;
                 float v = collisionBaryMeta.y;
                 float w = collisionBaryMeta.z;
+
                 float d = collisionBaryMeta.w;
+                float dMax = 0.2;
+                float barrierFunction = -(d-dMax)*(d-dMax)*log(d/dMax);
+                if (d > dMax){ // should never happen but just in case
+                    float barrierFunction = 0.0;
+                }
 
                 vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
                 // gonna have problems with direction, sometimes want normal = -normal...
 
                 //force -= normal; // this will later be changed to (u+v+w)*d*normal, I know u+v+w = 1 but still
-                force -= (u+v+w)*normal*nodeCollisionStiffness/d;
+                force -= (u+v+w)*normal*kNC * barrierFunction;
 
                 
-                //vec4 debug = vec4(1.0, 1.0, 1.0, 1.0);
+                //vec4 debug = vec4(-(u+v+w)*normal.x*kNC/d, -(u+v+w)*normal.y*kNC/d, -(u+v+w)*normal.z*kNC/d, kNC);
                 //gl_FragColor = debug; return; // node 1
             }
 
@@ -246,39 +253,71 @@
 
                 vec3 normal = getFromArray(faceHitMeta[0], u_textureDimFaces, u_normals).xyz;
 
+
+                //gl_FragColor = vec4(0, 0, 0, 0);
                 int faceHitIndex = 0; // a
-                if (faceHitMeta[2] < 0.0) faceHitIndex = 1; // b 
-                if (faceHitMeta[3] < 0.0) faceHitIndex = 2; // c
 
-                
-                
+                //if (faceHitMeta[2] < -0.1) {
+                //    faceHitIndex = 1; // b 
+                //    gl_FragColor[0] = 1.0;
+                //}
+                //if (faceHitMeta[3] < -0.1) {
+                //    faceHitIndex = 2; // c
+                //    gl_FragColor[1] = 1.0;
+                //} return;
 
+                if (faceHitMeta[2] < 0.0) {
+                    faceHitIndex = 1;
+                } else if (faceHitMeta[3] < 0.0) {
+                    faceHitIndex = 2;
+                } 
+
+        
 
                 float u = faceBaryMeta.x;
                 float v = faceBaryMeta.y;
                 float w = faceBaryMeta.z;
+
                 float d = faceBaryMeta.w;
-                // uvw - down and to the right 
-                // uwv - up and to the left
-                // vuw - down and to the right
-                // vwu - up and to the left
-                // wuv - up and to the left slowly
-                // wvu - down and to the right slowly 
+                float dMax = 0.2;
+                float barrierFunction = -(d-dMax)*(d-dMax)*log(d/dMax);
+                if (d > dMax){ // should never happen but just in case
+                    float barrierFunction = 0.0;
+                }
+
+                
+                
+
+                //gl_FragColor[0] = float(faceHitIndex);
 
                 if (faceHitIndex == 0){
-                    force += u*normal*nodeCollisionStiffness/d;
+                    force += w*normal*kNC * barrierFunction;
+                    //vec4 debug0 = vec4(u*normal.x*kNC/d, u*normal.y*kNC/d, u*normal.z*kNC/d, kNC);
                     //vec4 debug0 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
                     //gl_FragColor = debug0; return; // CONTINUE HERE
+                    //gl_FragColor[0] = float(faceHitIndex);
+                    //return;
 
-                } else if (faceHitIndex == 2){ // CRAZZZYYYY order of the if statements matter?!?!?? must be 0 -> 2 -> 1
-                    force += v*normal*nodeCollisionStiffness/d;
+                } else if (faceHitIndex == 1){ // CRAZZZYYYY order of the if statements matter?!?!?? must be 0 -> 2 -> 1
+                    force += v*normal*kNC * barrierFunction;
+                    //vec4 debug1 = vec4(v*normal.x*kNC/d, v*normal.y*kNC/d, v*normal.z*kNC/d, kNC);
                     //vec4 debug1 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
                     //gl_FragColor = debug1; return;
-                } else if (faceHitIndex == 1){
-                    force += w*normal*nodeCollisionStiffness/d;
+                    //gl_FragColor[0] = float(faceHitIndex);
+                    //return;
+
+                } else if (faceHitIndex == 2){
+                    force += u*normal*kNC * barrierFunction;
+                    //vec4 debug2 = vec4(w*normal.x*kNC/d, w*normal.y*kNC/d, w*normal.z*kNC/d, kNC);
                     //vec4 debug2 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
                     //gl_FragColor = debug2; return;
+                    //gl_FragColor[0] = float(faceHitIndex);
+                    //return;
                 }
+
+                //gl_FragColor[2] = float(faceHitIndex);
+                //return;
+                
             }
 
 
@@ -1302,12 +1341,12 @@
 
 
 <script> // this should be moved to globals I think
-let collisionsEnabled = true;  // default ON
+let collisionsEnabled = true;  // default ON // FIX to true
 
 const toggleBtn = document.getElementById("toggleCollisions");
 
 // Set initial label correctly
-toggleBtn.textContent = "Enable Collisions are ON";
+toggleBtn.textContent = "Enable Collisions are ON"; //FIX to ON
 
 toggleBtn.addEventListener("click", function () {
     collisionsEnabled = !collisionsEnabled;

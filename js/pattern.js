@@ -697,85 +697,85 @@ function initPattern(globals){
         }
 
         // ---- draw vertex indices ----
-        var fontSize = scale / 50;   // tweak as needed
-        var textOffset = scale / 200;
+        // var fontSize = scale / 50;   // tweak as needed
+        // var textOffset = scale / 200;
 
-        for (var i = 0; i < foldData.vertices_coords.length; i++) {
-            var v = foldData.vertices_coords[i];
+        // for (var i = 0; i < foldData.vertices_coords.length; i++) {
+        //     var v = foldData.vertices_coords[i];
 
-            var text = document.createElementNS(ns, 'text');
-            text.textContent = i;
+        //     var text = document.createElementNS(ns, 'text');
+        //     text.textContent = i;
 
-            text.setAttribute('x', v[0] + textOffset);
-            text.setAttribute('y', v[2] - textOffset);
-            text.setAttribute('font-size', fontSize);
-            text.setAttribute('fill', '#000');
-            text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
+        //     text.setAttribute('x', v[0] + textOffset);
+        //     text.setAttribute('y', v[2] - textOffset);
+        //     text.setAttribute('font-size', fontSize);
+        //     text.setAttribute('fill', '#000');
+        //     text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
 
-            svg.appendChild(text);
-        }
+        //     svg.appendChild(text);
+        // }
 
         // ---- draw face indices ----
 
-        for (var i = 0; i < foldData.faces_vertices.length; i++) {
-            var face = foldData.faces_vertices[i];
+        // for (var i = 0; i < foldData.faces_vertices.length; i++) {
+        //     var face = foldData.faces_vertices[i];
 
-            if (face.length < 3) continue; // safety check
+        //     if (face.length < 3) continue; // safety check
 
-            // Compute face centroid
-            var cx = 0, cy = 0, cz = 0;
-            for (var j = 0; j < face.length; j++) {
-                var v = foldData.vertices_coords[face[j]];
-                cx += v[0];
-                cy += v[1];
-                cz += v[2];
-            }
+        //     // Compute face centroid
+        //     var cx = 0, cy = 0, cz = 0;
+        //     for (var j = 0; j < face.length; j++) {
+        //         var v = foldData.vertices_coords[face[j]];
+        //         cx += v[0];
+        //         cy += v[1];
+        //         cz += v[2];
+        //     }
 
-            cx /= face.length;
-            cy /= face.length;
-            cz /= face.length;
+        //     cx /= face.length;
+        //     cy /= face.length;
+        //     cz /= face.length;
 
-            var text = document.createElementNS(ns, 'text');
-            text.textContent = i;
+        //     var text = document.createElementNS(ns, 'text');
+        //     text.textContent = i;
 
-            text.setAttribute('x', cx);
-            text.setAttribute('y', cz);          // using x–z plane like edges
-            text.setAttribute('font-size', fontSize);
-            text.setAttribute('fill', 'blue');
-            text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('dominant-baseline', 'middle');
-            text.setAttribute('pointer-events', 'none');
+        //     text.setAttribute('x', cx);
+        //     text.setAttribute('y', cz);          // using x–z plane like edges
+        //     text.setAttribute('font-size', fontSize);
+        //     text.setAttribute('fill', 'blue');
+        //     text.setAttribute('text-anchor', 'middle');
+        //     text.setAttribute('dominant-baseline', 'middle');
+        //     text.setAttribute('pointer-events', 'none');
 
-            svg.appendChild(text);
-        }
+        //     svg.appendChild(text);
+        // }
 
         // ---- draw edge indices ----
 
-        for (var i = 0; i < foldData.edges_vertices.length; i++) {
-            var edge = foldData.edges_vertices[i];
+        // for (var i = 0; i < foldData.edges_vertices.length; i++) {
+        //     var edge = foldData.edges_vertices[i];
 
-            if (edge.length < 2) continue; // safety check
+        //     if (edge.length < 2) continue; // safety check
 
-            var v0 = foldData.vertices_coords[edge[0]];
-            var v1 = foldData.vertices_coords[edge[1]];
+        //     var v0 = foldData.vertices_coords[edge[0]];
+        //     var v1 = foldData.vertices_coords[edge[1]];
 
-            // Compute midpoint of edge
-            var mx = 0.5 * (v0[0] + v1[0]) + 2;
-            var my = 0.5 * (v0[2] + v1[2]) + 2;
+        //     // Compute midpoint of edge
+        //     var mx = 0.5 * (v0[0] + v1[0]) + 2;
+        //     var my = 0.5 * (v0[2] + v1[2]) + 2;
 
-            var text = document.createElementNS(ns, 'text');
-            text.textContent = i;
+        //     var text = document.createElementNS(ns, 'text');
+        //     text.textContent = i;
 
-            text.setAttribute('x', mx);
-            text.setAttribute('y', my);          // using x–z plane like edges
-            text.setAttribute('font-size', fontSize);
-            text.setAttribute('fill', 'red');
-            text.setAttribute('text-anchor', 'middle');
-            text.setAttribute('dominant-baseline', 'middle');
-            text.setAttribute('pointer-events', 'none');
+        //     text.setAttribute('x', mx);
+        //     text.setAttribute('y', my);          // using x–z plane like edges
+        //     text.setAttribute('font-size', fontSize);
+        //     text.setAttribute('fill', 'red');
+        //     text.setAttribute('text-anchor', 'middle');
+        //     text.setAttribute('dominant-baseline', 'middle');
+        //     text.setAttribute('pointer-events', 'none');
 
-            svg.appendChild(text);
-        }
+        //     svg.appendChild(text);
+        // }
 
 
 

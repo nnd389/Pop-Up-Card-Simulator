@@ -3,6 +3,9 @@
  */
 
 function initDynamicSolver(globals){
+    //var spector = new SPECTOR.Spector();
+    //spector.displayUI();
+    //spector.spyCanvases();
 
     globals.gpuMath = initGPUMath();
 
@@ -172,8 +175,7 @@ function initDynamicSolver(globals){
             // up in solve theres a function called updateMaterials, similar to what you are doing here, it updates beammeta (not sure if it updates every frame tho)
             // might want to move some of this to solve instead
             if (collisionsEnabled) {
-                gpuMath.setProgram("collisionVelocityCalc");
-                gpuMath.setSize(textureDim, textureDim);
+                
 
                 [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions);
 
@@ -191,6 +193,8 @@ function initDynamicSolver(globals){
                 gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionFaceMeta", 7, "1i");
                 gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); 
 
+                gpuMath.setProgram("collisionVelocityCalc");
+                gpuMath.setSize(textureDim, textureDim);
                 gpuMath.step("collisionVelocityCalc", ["u_lastPosition", "u_lastVelocity", "u_originalPosition", "u_externalForces", "u_mass", "u_meta3", "u_normals", "u_nodeCollisionFaceMeta", "u_facesAreHitMeta"], "u_velocity"); // FIX: add in "u_beamCollisionMeta" when ready
                 
 
@@ -228,6 +232,7 @@ function initDynamicSolver(globals){
                 //     console.log("xsum is: ", xsum)
                 //     console.log("ysum is: ", ysum)
                 //     console.log("zsum is: ", zsum)
+                //     console.log("textruredim is: ", textureDim)
                 // }
                 // DONE
                 
@@ -252,7 +257,6 @@ function initDynamicSolver(globals){
     var $errorOutput = $("#globalError");
 
     function getAvgPosition(){
-        console.log("We are in getAvgPosition, here is positions:", positions)
         var xavg = 0;
         var yavg = 0;
         var zavg = 0;
@@ -656,7 +660,9 @@ function initDynamicSolver(globals){
                     var distWP = (W[0]-P[0])*(W[0]-P[0]) + (W[1]-P[1])*(W[1]-P[1]) + (W[2]-P[2])*(W[2]-P[2]); // FIX: make this signed distance - would help a lot distWP is currently always positive, so very close to zero
                     distWP = Math.sqrt(distWP);
 
-                    if (isInside == true && distWP <= 0.1){ // node i is officially colliding with face j
+                    //lets' try dmax = .1, collision happen cleanly at 95%
+                    // this dMax is controlled here and in collisionvelocitycalc
+                    if (isInside == true && distWP <= 0.2){ // node i is officially colliding with face j
                         console.log("Node ", i, " is colliding with face ", j, "!!")
                         _index = (index + numFaceColl) * 2 * 4; // _index is the texel index,    _index + k is the element index
 
