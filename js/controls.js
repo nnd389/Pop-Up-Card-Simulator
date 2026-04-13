@@ -374,16 +374,21 @@ function initControls(globals){
         $("#navPattern").parent().addClass("open");
         $("#navSimulation").parent().removeClass("open");
         $("#svgViewer").show();
+        $("#patternEditingOptions").show();
     });
     $("#navSimulation").parent().addClass("open");
     $("#navPattern").parent().removeClass("open");
     setLink("#navSimulation", function(){
         if (globals.navMode == "simulation") return;
+        if (globals.patternEditingMode) {
+            $("#patternEditingMode").prop("checked", false).trigger("change");
+        }
         globals.navMode = "simulation";
         if (globals.pausedForPatternView) globals.model.resume();
         $("#navSimulation").parent().addClass("open");
         $("#navPattern").parent().removeClass("open");
         $("#svgViewer").hide();
+        $("#patternEditingOptions").hide();
     });
 
     setLink(".seeMore", function(e){
@@ -467,8 +472,13 @@ function initControls(globals){
         globals.materialHasChanged = true;
     });
 
-    setSliderInput("#nodeCollisionStiffness", globals.nodeCollisionStiffness, 0, 0.2, 0.005, function(val){
+    setSliderInput("#nodeCollisionStiffness", globals.nodeCollisionStiffness, 0, 5.0, 0.05, function(val){
         globals.nodeCollisionStiffness = val;
+        globals.materialHasChanged = true;
+    });
+
+    setSliderInput("#nodeCollisionDMax", globals.nodeCollisionDMax, 0.01, 2.0, 0.05, function(val){
+        globals.nodeCollisionDMax = val;
         globals.materialHasChanged = true;
     });
 
@@ -646,6 +656,13 @@ function initControls(globals){
         else $("#meshMaterialOptions").hide();
     });
 
+    setCheckbox("#showFaceBarycenters", globals.showFaceBarycenters, function(val){
+        globals.showFaceBarycenters = val;
+        if (globals.dynamicSolver && globals.dynamicSolver.setFaceBarycentersVisibility){
+            globals.dynamicSolver.setFaceBarycentersVisibility(val);
+        }
+    });
+
     setLink("#aboutError", function(){
         $("#aboutErrorModal").modal("show");
     });
@@ -670,6 +687,28 @@ function initControls(globals){
 
     setCheckbox("#vrEnabled", globals.vrEnabled, function(val){
         globals.vrEnabled = val;
+    });
+
+    setCheckbox("#patternEditingMode", globals.patternEditingMode, function(val){
+        globals.patternEditingMode = val;
+        globals.pattern.setPatternEditingMode(val);
+
+        if (val) {
+            globals.pausedForPatternEditing = globals.simulationRunning;
+            if (globals.pausedForPatternEditing) {
+                globals.model.pause();
+                $("#start").css('display', 'inline-block');
+                $("#stepForwardOptions").css('display', 'inline-block');
+                $("#pause").hide();
+            }
+        } else if (globals.pausedForPatternEditing) {
+            globals.model.resume();
+            $("#pause").css('display', 'inline-block');
+            $("#reset").css('display', 'inline-block');
+            $("#start").hide();
+            $("#stepForwardOptions").hide();
+            globals.pausedForPatternEditing = false;
+        }
     });
 
     setLink("#start", function(){

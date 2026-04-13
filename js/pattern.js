@@ -47,6 +47,10 @@ function initPattern(globals){
     var badColors = [];//store any bad colors in svg file to show user
     var greenVals = [];
     var circleParams = [];
+    var patternEditingMode = false;
+    var hoverVertexIndex = null;
+    var hoverHighlightCircle = null;
+    var hoverRadiusPx = 12;
 
     function clearAll(){
 
@@ -81,6 +85,13 @@ function initPattern(globals){
     clearAll();
 
     var SVGloader = new THREE.SVGLoader();
+    $("#svgViewer").on("mousemove", function(e){
+        if (!patternEditingMode) return;
+        updateHoveredVertex(e);
+    });
+    $("#svgViewer").on("mouseleave", function(){
+        clearHoveredVertex();
+    });
 
     //filter for svg parsing
     function borderFilter(){
@@ -696,91 +707,161 @@ function initPattern(globals){
             svg.appendChild(line);
         }
 
-        // ---- draw vertex indices ----
-        // var fontSize = scale / 50;   // tweak as needed
-        // var textOffset = scale / 200;
+        hoverHighlightCircle = document.createElementNS(ns, 'circle');
+        hoverHighlightCircle.setAttribute('fill', '#ff9900');
+        hoverHighlightCircle.setAttribute('stroke', '#ffffff');
+        hoverHighlightCircle.setAttribute('stroke-width', strokeWidth * 1.5);
+        hoverHighlightCircle.style.display = 'none';
+        svg.appendChild(hoverHighlightCircle);
 
-        // for (var i = 0; i < foldData.vertices_coords.length; i++) {
-        //     var v = foldData.vertices_coords[i];
+        //---- draw vertex indices ----
+        var fontSize = scale / 50;   // tweak as needed
+        var textOffset = scale / 200;
 
-        //     var text = document.createElementNS(ns, 'text');
-        //     text.textContent = i;
+        for (var i = 0; i < foldData.vertices_coords.length; i++) {
+            var v = foldData.vertices_coords[i];
 
-        //     text.setAttribute('x', v[0] + textOffset);
-        //     text.setAttribute('y', v[2] - textOffset);
-        //     text.setAttribute('font-size', fontSize);
-        //     text.setAttribute('fill', '#000');
-        //     text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
 
-        //     svg.appendChild(text);
-        // }
+            text.setAttribute('x', v[0] + textOffset);
+            text.setAttribute('y', v[2] - textOffset);
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', '#000');
+            text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
+
+            svg.appendChild(text);
+        }
 
         // ---- draw face indices ----
 
-        // for (var i = 0; i < foldData.faces_vertices.length; i++) {
-        //     var face = foldData.faces_vertices[i];
+        for (var i = 0; i < foldData.faces_vertices.length; i++) {
+            var face = foldData.faces_vertices[i];
 
-        //     if (face.length < 3) continue; // safety check
+            if (face.length < 3) continue; // safety check
 
-        //     // Compute face centroid
-        //     var cx = 0, cy = 0, cz = 0;
-        //     for (var j = 0; j < face.length; j++) {
-        //         var v = foldData.vertices_coords[face[j]];
-        //         cx += v[0];
-        //         cy += v[1];
-        //         cz += v[2];
-        //     }
+            // Compute face centroid
+            var cx = 0, cy = 0, cz = 0;
+            for (var j = 0; j < face.length; j++) {
+                var v = foldData.vertices_coords[face[j]];
+                cx += v[0];
+                cy += v[1];
+                cz += v[2];
+            }
 
-        //     cx /= face.length;
-        //     cy /= face.length;
-        //     cz /= face.length;
+            cx /= face.length;
+            cy /= face.length;
+            cz /= face.length;
 
-        //     var text = document.createElementNS(ns, 'text');
-        //     text.textContent = i;
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
 
-        //     text.setAttribute('x', cx);
-        //     text.setAttribute('y', cz);          // using x–z plane like edges
-        //     text.setAttribute('font-size', fontSize);
-        //     text.setAttribute('fill', 'blue');
-        //     text.setAttribute('text-anchor', 'middle');
-        //     text.setAttribute('dominant-baseline', 'middle');
-        //     text.setAttribute('pointer-events', 'none');
+            text.setAttribute('x', cx);
+            text.setAttribute('y', cz);          // using x–z plane like edges
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', 'blue');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('pointer-events', 'none');
 
-        //     svg.appendChild(text);
-        // }
+            svg.appendChild(text);
+        }
 
         // ---- draw edge indices ----
 
-        // for (var i = 0; i < foldData.edges_vertices.length; i++) {
-        //     var edge = foldData.edges_vertices[i];
+        for (var i = 0; i < foldData.edges_vertices.length; i++) {
+            var edge = foldData.edges_vertices[i];
 
-        //     if (edge.length < 2) continue; // safety check
+            if (edge.length < 2) continue; // safety check
 
-        //     var v0 = foldData.vertices_coords[edge[0]];
-        //     var v1 = foldData.vertices_coords[edge[1]];
+            var v0 = foldData.vertices_coords[edge[0]];
+            var v1 = foldData.vertices_coords[edge[1]];
 
-        //     // Compute midpoint of edge
-        //     var mx = 0.5 * (v0[0] + v1[0]) + 2;
-        //     var my = 0.5 * (v0[2] + v1[2]) + 2;
+            // Compute midpoint of edge
+            var mx = 0.5 * (v0[0] + v1[0]) + 2;
+            var my = 0.5 * (v0[2] + v1[2]) + 2;
 
-        //     var text = document.createElementNS(ns, 'text');
-        //     text.textContent = i;
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
 
-        //     text.setAttribute('x', mx);
-        //     text.setAttribute('y', my);          // using x–z plane like edges
-        //     text.setAttribute('font-size', fontSize);
-        //     text.setAttribute('fill', 'red');
-        //     text.setAttribute('text-anchor', 'middle');
-        //     text.setAttribute('dominant-baseline', 'middle');
-        //     text.setAttribute('pointer-events', 'none');
+            text.setAttribute('x', mx);
+            text.setAttribute('y', my);          // using x–z plane like edges
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', 'red');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('pointer-events', 'none');
 
-        //     svg.appendChild(text);
-        // }
+            svg.appendChild(text);
+        }
 
 
 
         $("#svgViewer").html(svg);
+
+        clearHoveredVertex();
     }
+
+    function clearHoveredVertex(){
+        hoverVertexIndex = null;
+        if (hoverHighlightCircle) hoverHighlightCircle.style.display = 'none';
+    }
+
+    function updateHoveredVertex(e){
+        var svg = $("#svgViewer>svg").get(0);
+        if (!svg || !foldData.vertices_coords || foldData.vertices_coords.length === 0) {
+            clearHoveredVertex();
+            return;
+        }
+
+        var pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        var transformedPoint = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        var viewBox = svg.viewBox.baseVal;
+        var rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) {
+            clearHoveredVertex();
+            return;
+        }
+        var unitsPerPixelX = viewBox.width / rect.width;
+        var unitsPerPixelY = viewBox.height / rect.height;
+        var hoverRadius = hoverRadiusPx * Math.max(unitsPerPixelX, unitsPerPixelY);
+        var hoverRadiusSq = hoverRadius * hoverRadius;
+
+        var nearestIndex = -1;
+        var nearestDistSq = Infinity;
+        for (var i = 0; i < foldData.vertices_coords.length; i++) {
+            var vertex = foldData.vertices_coords[i];
+            var dx = vertex[0] - transformedPoint.x;
+            var dy = vertex[2] - transformedPoint.y;
+            var distSq = dx * dx + dy * dy;
+            if (distSq < nearestDistSq) {
+                nearestDistSq = distSq;
+                nearestIndex = i;
+            }
+        }
+
+        if (nearestIndex < 0 || nearestDistSq > hoverRadiusSq) {
+            clearHoveredVertex();
+            return;
+        }
+
+        if (!hoverHighlightCircle) return;
+        var highlightedVertex = foldData.vertices_coords[nearestIndex];
+        hoverVertexIndex = nearestIndex;
+        hoverHighlightCircle.setAttribute('cx', highlightedVertex[0]);
+        hoverHighlightCircle.setAttribute('cy', highlightedVertex[2]);
+        hoverHighlightCircle.setAttribute('r', hoverRadius * 0.75);
+        hoverHighlightCircle.style.display = 'block';
+    }
+
+    function setPatternEditingMode(enabled){
+        patternEditingMode = enabled;
+        if (!patternEditingMode) clearHoveredVertex();
+    }
+    
 
 
 
@@ -943,7 +1024,7 @@ function initPattern(globals){
         // need to write a custom split edges function so that glue dots can be in the middle of an edge
         foldData = addGlueSprings(foldData); // add glue springs to folddata!
         foldClone = structuredClone(foldData);
-        console.log("Here is foldClone after adding Glue Springs: ", foldClone)
+        console.log("Here is foldData after adding Glue Springs: ", foldClone)
 
 
         return processFold(foldData);
@@ -1029,7 +1110,7 @@ function initPattern(globals){
 
         for (var i=0;i<originalEdgesLength;i++){ // loop through all the edges, on edge i
             var assignmentI = fold.edges_assignment[i];
-            var greenValI = fold.edges_greenVal[i];
+            var greenValI = fold.edges_greenVal[i]; // DELETE dont need greenval of an edge, need greenval of a circle
             var edgeI = fold.edges_vertices[i];
             
 
@@ -1038,7 +1119,7 @@ function initPattern(globals){
             var x2 = fold.vertices_coords[edgeI[1]][0]; // this grabs the (x,y) coordinate the RIGHT endpoint on edge I (by left and right I mean edgeI[0] and edgeI[1])
             var y2 = fold.vertices_coords[edgeI[1]][dim-1]; 
 
-            
+            // FIX: delete this entire thing - we decided to throw out glue edges
             if (assignmentI == "G"){
                 //FIX: need to fix directional issue later
                  var vTopInd = edgeI[0];
@@ -1985,11 +2066,11 @@ function initPattern(globals){
     return {
         loadSVG: loadSVG,
         saveSVG: saveSVG,
+        setPatternEditingMode: setPatternEditingMode,
         getFoldData: getFoldData,
         getTriangulatedFaces: getTriangulatedFaces,
         setFoldData: setFoldData
         // for Nina
         //printAllEdgesVerticesFaces: printAllEdgesVerticesFaces
-
     }
 }

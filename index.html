@@ -161,6 +161,7 @@
         uniform vec2 u_textureDimNodeFaces2;
         uniform float u_dt;
         uniform float u_nodeCollisionStiffness;
+        uniform float u_nodeCollisionDMax;
         uniform sampler2D u_lastPosition;
         uniform sampler2D u_lastVelocity;
         uniform sampler2D u_originalPosition;
@@ -169,7 +170,7 @@
         uniform sampler2D u_meta3;// [nodeCollisionFaceMetaIndex, numFaces, facesAreHitMetaIndex, numfaces]
         uniform sampler2D u_normals;
         uniform sampler2D u_nodeCollisionFaceMeta;//[faceIndex, a, b, c, u, v, w, d] 
-        uniform sampler2D u_facesAreHitMeta;//[faceIndex, a, b, c, u, v, w, d] 
+        uniform sampler2D u_facesAreHitMeta;//[faceIndex, a, b, c, u, v, w, d]
 
         vec4 getFromArray(float index1D, vec2 dimensions, sampler2D tex){
             vec2 index = vec2(mod(index1D, dimensions.x)+0.5, floor(index1D/dimensions.x)+0.5);
@@ -183,12 +184,9 @@
             return texture2D(u_lastPosition, scaledIndex).xyz + texture2D(u_originalPosition, scaledIndex).xyz;
         }
 
-
-
         void main(){
             vec2 fragCoord = gl_FragCoord.xy;
             vec2 scaledFragCoord = fragCoord/u_textureDim;
-
             float nodeError = 0.0; // FIX node error
 
             vec2 mass = texture2D(u_mass, scaledFragCoord).xy;
@@ -196,130 +194,161 @@
                 gl_FragColor = vec4(0.0);
                 return;
             }
+
             vec3 force = texture2D(u_externalForces, scaledFragCoord).xyz;
             vec4 debug = vec4(0.0, 0.0, 0.0, 1.0);
             vec3 lastPosition = texture2D(u_lastPosition, scaledFragCoord).xyz;
             vec3 lastVelocity = texture2D(u_lastVelocity, scaledFragCoord).xyz;
             vec3 originalPosition = texture2D(u_originalPosition, scaledFragCoord).xyz;
             vec4 meta3 = texture2D(u_meta3, scaledFragCoord);
-            //float kNC = u_nodeCollisionStiffness;
-            float kNC = 1.0;
-
+            float kNC = u_nodeCollisionStiffness;
 
             // start reacting NODES to collisions!!!
             for (int j=0;j<100;j++){//for all nodes (up to 100, had to put a const int in here)
                 if (j >= int(meta3[1])) break;
 
                 vec4 collisionFaceMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
-                vec3 a = getPosition(collisionFaceMeta[1]);
-                vec3 b = getPosition(collisionFaceMeta[2]);
-                vec3 c = getPosition(collisionFaceMeta[3]);
+                vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
+                vec3 A = getPosition(collisionFaceMeta[1]);
+                vec3 B = getPosition(collisionFaceMeta[2]);
+                vec3 C = getPosition(collisionFaceMeta[3]);
+                vec3 W = vec3(lastPosition[0] + originalPosition[0], lastPosition[1]+ originalPosition[1], lastPosition[2]+ originalPosition[2]);
+                // consider redundancy and store i and use i to get position of W instead of using my position for W
 
-                vec4 collisionBaryMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0 + 1.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[u, v, w, d]
-                float u = collisionBaryMeta.x;
-                float v = collisionBaryMeta.y;
-                float w = collisionBaryMeta.z;
 
-                float d = collisionBaryMeta.w;
-                float dMax = 0.2;
-                float barrierFunction = -(d-dMax)*(d-dMax)*log(d/dMax);
-                if (d > dMax){ // should never happen but just in case
-                    float barrierFunction = 0.0;
+                // Project W to plane ABC
+                // see https://stackoverflow.com/questions/9605556/how-to-project-a-point-onto-a-plane-in-3d/17661431#17661431
+                vec3 AW = vec3(W[0]-A[0], W[1]-A[1], W[2]-A[2]); // step 1: v = point of interest - origin
+                float d = AW[0]*normal[0] + AW[1]*normal[1] + AW[2]*normal[2]; // step 2: dist = v dotted with normal
+                vec3 P = vec3(W[0]-d*normal[0], W[1]-d*normal[1], W[2]-d*normal[2]); // step 3: P = W-d*normal
+
+
+                // Find u,v,w coords of P in plane abc
+                // see: https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
+                vec3 AB = vec3(A[0]-B[0], A[1]-B[1], A[2]-B[2]);
+                vec3 AC = vec3(A[0]-C[0], A[1]-C[1], A[2]-C[2]);
+                vec3 PA = vec3(P[0]-A[0], P[1]-A[1], P[2]-A[2]);
+                vec3 PB = vec3(P[0]-B[0], P[1]-B[1], P[2]-B[2]);
+                vec3 PC = vec3(P[0]-C[0], P[1]-C[1], P[2]-C[2]);
+
+                vec3 crossABAC = vec3(AB[1]*AC[2]-AB[2]*AC[1], AB[2]*AC[0]-AB[0]*AC[2], AB[0]*AC[1]-AB[1]*AC[0]);
+                vec3 crossPBPC = vec3(PB[1]*PC[2]-PB[2]*PC[1], PB[2]*PC[0]-PB[0]*PC[2], PB[0]*PC[1]-PB[1]*PC[0]);
+                vec3 crossPCPA = vec3(PC[1]*PA[2]-PC[2]*PA[1], PC[2]*PA[0]-PC[0]*PA[2], PC[0]*PA[1]-PC[1]*PA[0]);
+                
+                float areaABC = (crossABAC[0]*normal[0] + crossABAC[1]*normal[1] + crossABAC[2]*normal[2])/2.0;
+                float u = (crossPBPC[0]*normal[0] + crossPBPC[1]*normal[1] + crossPBPC[2]*normal[2])/(2.0*areaABC);
+                float v = (crossPCPA[0]*normal[0] + crossPCPA[1]*normal[1] + crossPCPA[2]*normal[2])/(2.0*areaABC);
+                float w = 1.0-u-v;
+
+                int isInside = 0;
+                if (0.0 <= u && u <= 1.0 &&
+                    0.0 <= v && v <= 1.0 &&
+                    0.0 <= w && w <= 1.0 &&
+                    abs(1.0-u-v-w) <= 0.0001){
+                        isInside = 1;
                 }
 
-                vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
-                // gonna have problems with direction, sometimes want normal = -normal...
+                float dAbs = abs(d);
+                float dSign = sign(d);
+                float dMax = u_nodeCollisionDMax;
+                float barrierFunction = -(dAbs-dMax)*(dAbs-dMax)*log(dAbs/dMax);
+                if (dAbs > dMax){ // should never happen but just in case
+                    float barrierFunction = 0.0;
+                }
+                float impulse = 2.0*barrierFunction/(1.0+u*u+v*v+w*w);
 
-                //force -= normal; // this will later be changed to (u+v+w)*d*normal, I know u+v+w = 1 but still
-                force -= (u+v+w)*normal*kNC * barrierFunction;
-
-                
-                //vec4 debug = vec4(-(u+v+w)*normal.x*kNC/d, -(u+v+w)*normal.y*kNC/d, -(u+v+w)*normal.z*kNC/d, kNC);
+                // Sanity Checks
+                vec3 WP = vec3(P[0]-W[0], P[1]-W[1], P[2]-W[2]);
+                vec3 WPcrossN = vec3(WP[1]*normal[2]-WP[2]*normal[1], WP[2]*normal[0]-WP[0]*normal[2], WP[0]*normal[1]-WP[1]*normal[0]);
+                //vec4 debug = vec4(WPcrossN[0], WPcrossN[1], WPcrossN[2], 5.0);
                 //gl_FragColor = debug; return; // node 1
+
+                if (isInside == 1 && dAbs < dMax){
+                    force += dSign*impulse*normal*kNC; // gonna have problems with direction, sometimes want normal = -normal...
+                } 
             }
 
+            //CONTINUE HERE 
+            // I suspect there might be a problem with you calculations, why dont you go back and double check them. 
+            // Can successfully recall x1, x2, and x3, positions here which are a, b, c (MUST BE LASTPOS + ORGPOS)
 
             // start having the faces react to collisions
             for (int j=0;j<100;j++){//for all faces (up to 100, had to put a const int in here)
                 if (j >= int(meta3[3])) break;
 
-                // CHECK: I was previously using: meta3[2] + float(j) * 2.0
-                // but updated eveything to use meta3[2]*2.0 + float(j) * 2.0
-                // recall that each texel is length 4, so each row has two texels
-
-
                 vec4 faceHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[faceHitIndex, -1, b, c]
-                vec4 faceBaryMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d]
+                vec4 nodeHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d]
 
                 vec3 normal = getFromArray(faceHitMeta[0], u_textureDimFaces, u_normals).xyz;
+                vec3 A = getPosition(faceHitMeta[1]);
+                vec3 B = getPosition(faceHitMeta[2]);
+                vec3 C = getPosition(faceHitMeta[3]);
+                vec3 W = getPosition(nodeHitMeta[1]);
+
+                // Project W to plane ABC
+                // see https://stackoverflow.com/questions/9605556/how-to-project-a-point-onto-a-plane-in-3d/17661431#17661431
+                vec3 AW = vec3(W[0]-A[0], W[1]-A[1], W[2]-A[2]); // step 1: v = point of interest - origin
+                float d = AW[0]*normal[0] + AW[1]*normal[1] + AW[2]*normal[2]; // step 2: dist = v dotted with normal
+                vec3 P = vec3(W[0]-d*normal[0], W[1]-d*normal[1], W[2]-d*normal[2]); // step 3: P = W-d*normal
 
 
-                //gl_FragColor = vec4(0, 0, 0, 0);
-                int faceHitIndex = 0; // a
+                // Find u,v,w coords of P in plane abc
+                // see: https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
+                vec3 AB = vec3(A[0]-B[0], A[1]-B[1], A[2]-B[2]);
+                vec3 AC = vec3(A[0]-C[0], A[1]-C[1], A[2]-C[2]);
+                vec3 PA = vec3(P[0]-A[0], P[1]-A[1], P[2]-A[2]);
+                vec3 PB = vec3(P[0]-B[0], P[1]-B[1], P[2]-B[2]);
+                vec3 PC = vec3(P[0]-C[0], P[1]-C[1], P[2]-C[2]);
 
-                //if (faceHitMeta[2] < -0.1) {
-                //    faceHitIndex = 1; // b 
-                //    gl_FragColor[0] = 1.0;
-                //}
-                //if (faceHitMeta[3] < -0.1) {
-                //    faceHitIndex = 2; // c
-                //    gl_FragColor[1] = 1.0;
-                //} return;
+                vec3 crossABAC = vec3(AB[1]*AC[2]-AB[2]*AC[1], AB[2]*AC[0]-AB[0]*AC[2], AB[0]*AC[1]-AB[1]*AC[0]);
+                vec3 crossPBPC = vec3(PB[1]*PC[2]-PB[2]*PC[1], PB[2]*PC[0]-PB[0]*PC[2], PB[0]*PC[1]-PB[1]*PC[0]);
+                vec3 crossPCPA = vec3(PC[1]*PA[2]-PC[2]*PA[1], PC[2]*PA[0]-PC[0]*PA[2], PC[0]*PA[1]-PC[1]*PA[0]);
+                
+                float areaABC = (crossABAC[0]*normal[0]+crossABAC[1]*normal[1]+crossABAC[2]*normal[2])/2.0;
+                float u = (crossPBPC[0]*normal[0] + crossPBPC[1]*normal[1] + crossPBPC[2]*normal[2])/(2.0*areaABC);
+                float v = (crossPCPA[0]*normal[0] + crossPCPA[1]*normal[1] + crossPCPA[2]*normal[2])/(2.0*areaABC);
+                float w = 1.0-u-v;
 
-                if (faceHitMeta[2] < 0.0) {
-                    faceHitIndex = 1;
-                } else if (faceHitMeta[3] < 0.0) {
-                    faceHitIndex = 2;
-                } 
+                int isInside = 0;
+                if (0.0 <= u && u <= 1.0 &&
+                    0.0 <= v && v <= 1.0 &&
+                    0.0 <= w && w <= 1.0 &&
+                    abs(1.0-u-v-w) <= 0.0001){
+                        isInside = 1;
+                }
 
-        
-
-                float u = faceBaryMeta.x;
-                float v = faceBaryMeta.y;
-                float w = faceBaryMeta.z;
-
-                float d = faceBaryMeta.w;
-                float dMax = 0.2;
-                float barrierFunction = -(d-dMax)*(d-dMax)*log(d/dMax);
-                if (d > dMax){ // should never happen but just in case
+                float dAbs = abs(d);
+                float dSign = sign(d);
+                float dMax = u_nodeCollisionDMax;
+                float barrierFunction = -(dAbs-dMax)*(dAbs-dMax)*log(dAbs/dMax);
+                if (dAbs > dMax){ // should never happen but just in case
                     float barrierFunction = 0.0;
                 }
-
+                float impulse = 2.0*barrierFunction/(1.0+u*u+v*v+w*w);
                 
-                
+                vec3 WP = vec3(P[0]-W[0], P[1]-W[1], P[2]-W[2]);
+                vec3 WPcrossN = vec3(WP[1]*normal[2]-WP[2]*normal[1], WP[2]*normal[0]-WP[0]*normal[2], WP[0]*normal[1]-WP[1]*normal[0]);
 
-                //gl_FragColor[0] = float(faceHitIndex);
-
+                int faceHitIndex = int(nodeHitMeta[0]);
                 if (faceHitIndex == 0){
-                    force += w*normal*kNC * barrierFunction;
-                    //vec4 debug0 = vec4(u*normal.x*kNC/d, u*normal.y*kNC/d, u*normal.z*kNC/d, kNC);
-                    //vec4 debug0 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
-                    //gl_FragColor = debug0; return; // CONTINUE HERE
-                    //gl_FragColor[0] = float(faceHitIndex);
-                    //return;
+                    force -= u*dSign*impulse*normal*kNC;
+
+                    //vec4 debug0 = vec4(WPcrossN[0], WPcrossN[1], WPcrossN[2], 1.0);
+                    //gl_FragColor = debug0; return; 
 
                 } else if (faceHitIndex == 1){ // CRAZZZYYYY order of the if statements matter?!?!?? must be 0 -> 2 -> 1
-                    force += v*normal*kNC * barrierFunction;
-                    //vec4 debug1 = vec4(v*normal.x*kNC/d, v*normal.y*kNC/d, v*normal.z*kNC/d, kNC);
-                    //vec4 debug1 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
+                    force -= v*dSign*impulse*normal*kNC;
+
+                    //vec4 debug1 = vec4(WPcrossN[0], WPcrossN[1], WPcrossN[2], 2.0);
                     //gl_FragColor = debug1; return;
-                    //gl_FragColor[0] = float(faceHitIndex);
-                    //return;
 
                 } else if (faceHitIndex == 2){
-                    force += u*normal*kNC * barrierFunction;
-                    //vec4 debug2 = vec4(w*normal.x*kNC/d, w*normal.y*kNC/d, w*normal.z*kNC/d, kNC);
-                    //vec4 debug2 = vec4(faceHitIndex, faceHitMeta[1], faceHitMeta[2], faceHitMeta[3]);
+                    force -= w*dSign*impulse*normal*kNC;
+
+                    //vec4 debug2 = vec4(WPcrossN[0], WPcrossN[1], WPcrossN[2], 3.0);
                     //gl_FragColor = debug2; return;
-                    //gl_FragColor[0] = float(faceHitIndex);
-                    //return;
-                }
-
-                //gl_FragColor[2] = float(faceHitIndex);
-                //return;
-                
+                }  
             }
-
 
             vec3 velocity = force*u_dt/mass[0] + lastVelocity; // FIX: might need to change this
             gl_FragColor = vec4(velocity,nodeError); 
@@ -1336,6 +1365,7 @@
     <!--</div><br/><br/>-->
     <a href="#" id="showAdvancedOptions">Show Advanced Options</a><br/><br/>
     <button id="toggleCollisions">Enable Collisions are ON</button><br/><br/>
+    
 
 </div>
 
@@ -1430,6 +1460,10 @@ toggleBtn.addEventListener("click", function () {
                 <span class="label-slider">Node Collision Strength : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
                 <input value="" placeholder="" class="float form-control" type="text">
             </div>
+            <div class="sliderInput" id="nodeCollisionDMax">
+                <span class="label-slider">Node Collision dMax : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
+                <input value="" placeholder="" class="float form-control" type="text">
+            </div>
             <div class="sliderInput" id="percentDamping">
                 <span class="label-slider">Damping Ratio : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
                 <input value="" placeholder="" class="float form-control" type="text">
@@ -1462,6 +1496,11 @@ toggleBtn.addEventListener("click", function () {
     <div class="extraSpace"></div>
 </div>
 <div id="svgViewer"></div>
+<div id="patternEditingOptions">
+    <label for="patternEditingMode">
+        <input id="patternEditingMode" type="checkbox"> Pattern Editing Mode
+    </label>
+</div>
 <div id="helper">Load more origami patterns here!</div>
 <div id="feedbackNotification"><span>Help Us Improve Origami Simulator</span> <span>&#x279C;</span></div>
 <div id="controlsBottom">
@@ -1527,6 +1566,10 @@ toggleBtn.addEventListener("click", function () {
                     <label class="radio">
                         <input name="colorMode" value="normal" data-toggle="radio" class="custom-radio" type="radio"><span class="icons"><span class="icon-unchecked"></span><span class="icon-checked"></span></span>
                         Face Normals Material
+                    </label>
+                    <label class="checkbox" for="showFaceBarycenters">
+                        <input id="showFaceBarycenters" data-toggle="checkbox" class="custom-checkbox layersSelector" type="checkbox"><span class="icons"><span class="icon-unchecked"></span><span class="icon-checked"></span></span>
+                        Show Face Barycenters
                     </label>
                 </div>
                 <br/>

@@ -15,6 +15,11 @@ function initDynamicSolver(globals){
     var creases;
     var positions;
     var colors;
+    var faceBarycenterGroup; //DELETE - for visualizing barycenters
+    var faceBarycenterMeshes = []; //DELETE - for visualizing barycenters
+    var faceBarycenterGeometry; //DELETE - for visualizing barycenters
+    var faceBarycenterMaterial; //DELETE - for visualizing barycenters
+    var worldPosition;
 
     var originalPosition;
     var position;
@@ -53,6 +58,7 @@ function initDynamicSolver(globals){
 
         positions = globals.model.getPositionsArray();
         colors = globals.model.getColorsArray();
+        initFaceBarycenterRenderData(); //DELETE - for visualizing barycenters
 
         initTypedArrays();
         initTexturesAndPrograms(globals.gpuMath);
@@ -115,6 +121,25 @@ function initDynamicSolver(globals){
             globals.shouldChangeCreasePercent = false;
         }
 
+        if (collisionsEnabled) {
+            [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions);
+            // console.log("positions is: ", positions);
+            // console.log("facevertexindices is: ", faceVertexIndices)
+            // console.log("meta3 is: ", meta3);
+            // console.log("nodecollisionfacemeta is: ", nodeCollisionFaceMeta);
+            // console.log("facesarehitmeta is: ", facesAreHitMeta);
+            
+
+            globals.gpuMath.initTextureFromData("u_nodeCollisionFaceMeta", textureDimNodeCollisions, textureDimNodeCollisions, "FLOAT", nodeCollisionFaceMeta, true);
+            globals.gpuMath.initTextureFromData("u_facesAreHitMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", facesAreHitMeta, true);
+            globals.gpuMath.initTextureFromData("u_meta3", textureDim, textureDim, "FLOAT", meta3, true);
+            globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_meta3", 5, "1i");
+            globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionFaceMeta", 7, "1i");
+            globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); 
+        }
+
+
+
 
 
         // if (globals.shouldZeroDynamicVelocity){
@@ -134,8 +159,8 @@ function initDynamicSolver(globals){
             globals.shouldCenterGeo = false;
         }
 
-
         if (_numSteps === undefined) _numSteps = globals.numSteps;
+
         for (var j=0;j<_numSteps;j++){
             solveStep();
         }
@@ -171,39 +196,42 @@ function initDynamicSolver(globals){
         } else {//euler
             
 
+            gpuMath.setProgram("velocityCalc");
+            gpuMath.setSize(textureDim, textureDim);
+            gpuMath.step("velocityCalc", ["u_lastPosition", "u_lastVelocity", "u_originalPosition", "u_externalForces",
+                "u_mass", "u_meta", "u_beamMeta", "u_creaseMeta", "u_nodeCreaseMeta", "u_normals", "u_theta", "u_creaseGeo",
+                "u_meta2", "u_nodeFaceMeta", "u_nominalTriangles"], "u_velocity");
+
             // don't forget to put all this in the verlet option as well
-            // up in solve theres a function called updateMaterials, similar to what you are doing here, it updates beammeta (not sure if it updates every frame tho)
-            // might want to move some of this to solve instead
             if (collisionsEnabled) {
-                
 
-                [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions);
+                //DELETE updatelastposition and delete the entire funciton updateworldposition
+                //updateLastPosition();
+                //updateWorldPosition();
 
-                // if (meta3[3] > 0){
-                //     console.log("meta3 is: ", meta3);
-                //     console.log("nodeCollisionFaceMeta is: ", nodeCollisionFaceMeta)
-                //     console.log("facesarehitmeta is: ", facesAreHitMeta)
-                // }
+                //CONTINUE HERE
+                // I updated the form of nodecollisionfacemeta and facesarehitmeta (I should really update those names)
+                // new form is documented on ipad
+                // new technique is to calculate barcentric coords and P, and d on GPU directly (instead of passing it in)
+                // this way all the needed variables are calculated using the most accurate positions possible
 
-                gpuMath.initTextureFromData("u_nodeCollisionFaceMeta", textureDimNodeCollisions, textureDimNodeCollisions, "FLOAT", nodeCollisionFaceMeta, true);
-                gpuMath.initTextureFromData("u_facesAreHitMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", facesAreHitMeta, true);
-                gpuMath.initTextureFromData("u_meta3", textureDim, textureDim, "FLOAT", meta3, true);
+                // Dear Princess Celestia, 
+                // today I learned that having the node and face index information can be collected and stored on the CPU,  
+                // but all calculated values using positions that we want to apply forces with should occur on the GPU
 
-                gpuMath.setUniformForProgram("collisionVelocityCalc", "u_meta3", 5, "1i");
-                gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionFaceMeta", 7, "1i");
-                gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); 
+
+                gpuMath.swapTextures("u_velocity", "u_lastVelocity");
 
                 gpuMath.setProgram("collisionVelocityCalc");
                 gpuMath.setSize(textureDim, textureDim);
                 gpuMath.step("collisionVelocityCalc", ["u_lastPosition", "u_lastVelocity", "u_originalPosition", "u_externalForces", "u_mass", "u_meta3", "u_normals", "u_nodeCollisionFaceMeta", "u_facesAreHitMeta"], "u_velocity"); // FIX: add in "u_beamCollisionMeta" when ready
-                
 
-                // FOR DEBUGGING ONLY
-                // var xsum = 0;
-                // var ysum = 0;
-                // var zsum = 0;
+                //
                 
+                
+                // FOR DEBUGGING ONLY
                 // if (meta3[3] > 0){
+
                 //     // DEBUG: read back u_velocity (RGBA = whatever shader wrote, e.g. u,v,w,d)
                 //     const vectorLength = 4;
                 //     gpuMath.setProgram("packToBytes");
@@ -221,37 +249,37 @@ function initDynamicSolver(globals){
 
                 //         // print first few nodes
                 //         for (let i = 0; i < nodes.length; i++) {
-                //             xsum += parsed[i*4];
-                //             ysum += parsed[i*4+1];
-                //             zsum += parsed[i*4+2];
-
                 //             console.log("u_velocity node", i, ": ", parsed[i*4], parsed[i*4 + 1], parsed[i*4 + 2], parsed[i*4 + 3]);
                 //         }
+                //         console.log("skip")
                 //     }
-
-                //     console.log("xsum is: ", xsum)
-                //     console.log("ysum is: ", ysum)
-                //     console.log("zsum is: ", zsum)
-                //     console.log("textruredim is: ", textureDim)
                 // }
-                // DONE
+                //DONE
                 
-                
-                gpuMath.swapTextures("u_velocity", "u_lastVelocity"); // if you put collisionvelocitycalc inbetween the other two neep to put swaptextures ontop
+                //gpuMath.swapTextures("u_velocity", "u_lastVelocity"); // if you put collisionvelocitycalc inbetween the other two neep to put swaptextures ontop
             }
             
 
-            gpuMath.setProgram("velocityCalc");
-            gpuMath.setSize(textureDim, textureDim);
-            gpuMath.step("velocityCalc", ["u_lastPosition", "u_lastVelocity", "u_originalPosition", "u_externalForces",
-                "u_mass", "u_meta", "u_beamMeta", "u_creaseMeta", "u_nodeCreaseMeta", "u_normals", "u_theta", "u_creaseGeo",
-                "u_meta2", "u_nodeFaceMeta", "u_nominalTriangles"], "u_velocity");
+            
             gpuMath.step("positionCalc", ["u_velocity", "u_lastPosition", "u_mass"], "u_position");
         }
 
         gpuMath.swapTextures("u_theta", "u_lastTheta");
         gpuMath.swapTextures("u_velocity", "u_lastVelocity");
         gpuMath.swapTextures("u_position", "u_lastPosition");
+
+
+
+
+
+        // [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions);
+
+        // globals.gpuMath.initTextureFromData("u_nodeCollisionFaceMeta", textureDimNodeCollisions, textureDimNodeCollisions, "FLOAT", nodeCollisionFaceMeta, true);
+        // globals.gpuMath.initTextureFromData("u_facesAreHitMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", facesAreHitMeta, true);
+        // globals.gpuMath.initTextureFromData("u_meta3", textureDim, textureDim, "FLOAT", meta3, true);
+        // globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_meta3", 5, "1i");
+        // globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionFaceMeta", 7, "1i");
+        // globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); 
     }
 
     var $errorOutput = $("#globalError");
@@ -307,10 +335,63 @@ function initDynamicSolver(globals){
                 }
             }
             $errorOutput.html((globalError/nodes.length).toFixed(7) + " %");
+            renderFaceBarycenters(); //DELETE - for visualizing barycenters
         } else {
             console.log("shouldn't be here");
         }
     }
+//DELETE - for visualizing barycenters
+    function initFaceBarycenterRenderData(){
+        if (!faceBarycenterGroup){
+            faceBarycenterGroup = new THREE.Object3D();
+            globals.threeView.sceneAddModel(faceBarycenterGroup);
+        }
+        if (!faceBarycenterGeometry) faceBarycenterGeometry = new THREE.SphereGeometry(0.02, 8, 8);
+        if (!faceBarycenterMaterial) faceBarycenterMaterial = new THREE.MeshBasicMaterial({color: 0x0c7bdc});
+        while (faceBarycenterGroup.children.length > 0){
+            faceBarycenterGroup.remove(faceBarycenterGroup.children[0]);
+        }
+        faceBarycenterMeshes = [];
+        for (var i=0;i<faces.length;i++){
+            var barycenterMesh = new THREE.Mesh(faceBarycenterGeometry, faceBarycenterMaterial);
+            faceBarycenterGroup.add(barycenterMesh);
+            faceBarycenterMeshes.push(barycenterMesh);
+        }
+    }
+
+    function calculateFaceBarycentersFromPositions(currentPositions){
+        var barycenters = [];
+        for (var i=0;i<faces.length;i++){
+            var face = faces[i];
+            var nodeAIndex = 3*face[0];
+            var nodeBIndex = 3*face[1];
+            var nodeCIndex = 3*face[2];
+            barycenters.push(new THREE.Vector3(
+                (currentPositions[nodeAIndex] + currentPositions[nodeBIndex] + currentPositions[nodeCIndex])/3,
+                (currentPositions[nodeAIndex+1] + currentPositions[nodeBIndex+1] + currentPositions[nodeCIndex+1])/3,
+                (currentPositions[nodeAIndex+2] + currentPositions[nodeBIndex+2] + currentPositions[nodeCIndex+2])/3
+            ));
+
+        }
+        return barycenters;
+    }
+
+    function renderFaceBarycenters(){
+        if (!faceBarycenterGroup || faceBarycenterMeshes.length !== faces.length) initFaceBarycenterRenderData();
+        var barycenters = calculateFaceBarycentersFromPositions(positions);
+        for (var i=0;i<barycenters.length;i++){
+            faceBarycenterMeshes[i].position.copy(barycenters[i]);
+        }
+    }
+
+    function setFaceBarycentersVisibility(visible){
+        globals.showFaceBarycenters = visible;
+        if (faceBarycenterGroup) faceBarycenterGroup.visible = visible;
+    }
+    //DELETE - for visualizing barycenters^
+
+
+    
 
     function setSolveParams(){
         var dt = calcDt();
@@ -388,7 +469,7 @@ function initDynamicSolver(globals){
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_meta3", 5, "1i");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_normals", 6, "1i");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionFaceMeta", 7, "1i");
-        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i"); 
+        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_facesAreHitMeta", 8, "1i");
         //gpuMath.setUniformForProgram("collisionVelocityCalc", "u_beamCollisionMeta", 9, "1i");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDim", [textureDim, textureDim], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeCollisions", [textureDimNodeCollisions, textureDimNodeCollisions], "2f");
@@ -396,7 +477,7 @@ function initDynamicSolver(globals){
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeFaces2", [textureDimNodeFaces2, textureDimNodeFaces2], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimFaces", [textureDimFaces, textureDimFaces], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionStiffness", globals.nodeCollisionStiffness, "1f");
-
+        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionDMax", globals.nodeCollisionDMax, "1f");
 
         gpuMath.createProgram("velocityCalcVerlet", vertexShader, document.getElementById("velocityCalcVerletShader").text);
         gpuMath.setUniformForProgram("velocityCalcVerlet", "u_position", 0, "1i");
@@ -544,6 +625,7 @@ function initDynamicSolver(globals){
         if (programsInited) {
             globals.gpuMath.setProgram("collisionVelocityCalc");
             globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionStiffness", globals.nodeCollisionStiffness, "1f");
+            globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionDMax", globals.nodeCollisionDMax, "1f");
             globals.gpuMath.setProgram("velocityCalc");
             globals.gpuMath.setUniformForProgram("velocityCalc", "u_axialStiffness", globals.axialStiffness, "1f");
             globals.gpuMath.setUniformForProgram("velocityCalc", "u_faceStiffness", globals.faceStiffness, "1f");
@@ -623,6 +705,20 @@ function initDynamicSolver(globals){
         globals.gpuMath.setUniformForProgram("positionCalcVerlet", "u_creasePercent", percent, "1f");
     }
 
+
+    function updateWorldPosition(){ //DELETE written by codex
+        if (!worldPosition || worldPosition.length !== nodes.length * 3){
+            worldPosition = new Float32Array(nodes.length * 3);
+        }
+        for (var i=0;i<nodes.length;i++){
+            var rgbaIndex = i*4;
+            var xyzIndex = i*3;
+            worldPosition[xyzIndex] = lastPosition[rgbaIndex] + originalPosition[rgbaIndex];
+            worldPosition[xyzIndex+1] = lastPosition[rgbaIndex+1] + originalPosition[rgbaIndex+1];
+            worldPosition[xyzIndex+2] = lastPosition[rgbaIndex+2] + originalPosition[rgbaIndex+2];
+        }
+    }
+
     function getNodeFaceCollisionMeta(currentPositions){ 
         // meta3 = [nodeCollisionFaceMetaIndex, numCollFaces, facesAreHitMetaIndex, numFacesHit]
         // nodeCollisionFaceMeta = [faceIndex, a, b, c, u, v, w, d] 
@@ -636,7 +732,14 @@ function initDynamicSolver(globals){
         var sort = []; // this will be used to sort facesareHitMeta later
         var index = 0; // index is faceGroupIndex
         var _index = 0;
-        var facesAreHitIndex = 0;
+        var WMinusP = [0, 0, 0];
+
+        const sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
+        const add = (u, v) => [u[0]+v[0], u[1]+v[1], u[2]+v[2]];
+        const dot = (u, v) => u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+        const cross = (u, v) => [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+        const scale = (s, v) => [s*v[0], s*v[1], s*v[2]];
+
 
         for (var i=0;i<nodes.length;i++){ //node i
             meta3_[4*i+0] = index;
@@ -645,25 +748,63 @@ function initDynamicSolver(globals){
             for (var j=0;j<faces.length;j++){ // face j
                 if (i!=faces[j][0] && i!=faces[j][1] && i!=faces[j][2]){ // if node i is NOT connected to face j, move forward
                     // we are testing if node i (point W) is touching face j (triangle ABC)
-                    var W = [currentPositions[3*i], currentPositions[3*i+2], currentPositions[3*i+1]]; // [x,y,z]
-                    var A = [currentPositions[3*faces[j][0]], currentPositions[3*faces[j][0]+2], currentPositions[3*faces[j][0]+1]]; // [x,y,z]
-                    var B = [currentPositions[3*faces[j][1]], currentPositions[3*faces[j][1]+2], currentPositions[3*faces[j][1]+1]]; // [x,y,z]
-                    var C = [currentPositions[3*faces[j][2]], currentPositions[3*faces[j][2]+2], currentPositions[3*faces[j][2]+1]]; // [x,y,z]
+                    // var W = [currentPositions[3*i], currentPositions[3*i+1], currentPositions[3*i+2]]; // [x,y,z]
+                    // var A = [currentPositions[3*faces[j][0]], currentPositions[3*faces[j][0]+1], currentPositions[3*faces[j][0]+2]]; // [x,y,z]
+                    // var B = [currentPositions[3*faces[j][1]], currentPositions[3*faces[j][1]+1], currentPositions[3*faces[j][1]+2]]; // [x,y,z]
+                    // var C = [currentPositions[3*faces[j][2]], currentPositions[3*faces[j][2]+1], currentPositions[3*faces[j][2]+2]]; // [x,y,z]
+   
+                    // var AB = [B[0]-A[0], B[1]-A[1], B[2]-A[2]];
+                    // var AC = [C[0]-A[0], C[1]-A[1], C[2]-A[2]];
                     
-                    var P = projectPointToPlane(A, B, C, W); //FIX: can skip is P in Triangle ABC if distWP is < thickness
-                    var baryInfo = isPInTriangleABC(A, B, C, P);
-                    var isInside = baryInfo.isInside;
-                    var u = baryInfo.alpha;
-                    var v = baryInfo.beta;
-                    var w = baryInfo.gamma;
+                    // var normal = cross(AB, AC); //DELETE
+                    // var len = Math.sqrt(dot(normal, normal));
+                    // normal = [normal[0] / len, normal[1] / len, normal[2] / len];
 
-                    var distWP = (W[0]-P[0])*(W[0]-P[0]) + (W[1]-P[1])*(W[1]-P[1]) + (W[2]-P[2])*(W[2]-P[2]); // FIX: make this signed distance - would help a lot distWP is currently always positive, so very close to zero
-                    distWP = Math.sqrt(distWP);
+                    // var P = projectPointToPlane(A, B, C, W); //FIX: can skip is P in Triangle ABC if distWP is < thickness
+                    // var baryInfo = isPInTriangleABC(A, B, C, P);
+                    // var isInside = baryInfo.isInside;
+                    // var u = baryInfo.alpha;
+                    // var v = baryInfo.beta;
+                    // var w = baryInfo.gamma;
+                    
+                    // var distWP = (W[0]-P[0])*(W[0]-P[0]) + (W[1]-P[1])*(W[1]-P[1]) + (W[2]-P[2])*(W[2]-P[2]); // FIX: make this signed distance - would help a lot distWP is currently always positive, so very close to zero
+                    // distWP = Math.sqrt(distWP);
+                    // var d = distWP*Math.sign(normalDotWMinusP); // d = d * sign(n dot (W-P))
+                    // var dMax = globals.nodeCollisionDMax;
 
-                    //lets' try dmax = .1, collision happen cleanly at 95%
-                    // this dMax is controlled here and in collisionvelocitycalc
-                    if (isInside == true && distWP <= 0.2){ // node i is officially colliding with face j
+                    // var WMinusP = [W[0]-P[0], W[1]-P[1], W[2]-P[2]];
+                    // var normalDotWMinusP = normal[0]*WMinusP[0] + normal[1]*WMinusP[1] + normal[2]*WMinusP[2];
+                    
+
+                    // See https://graphics.stanford.edu/papers/cloth-sig02/cloth.pdf
+                    var x4 = [currentPositions[3*i], currentPositions[3*i+1], currentPositions[3*i+2]]; // [x,y,z]
+                    var x1 = [currentPositions[3*faces[j][0]], currentPositions[3*faces[j][0]+1], currentPositions[3*faces[j][0]+2]]; // [x,y,z]
+                    var x2 = [currentPositions[3*faces[j][1]], currentPositions[3*faces[j][1]+1], currentPositions[3*faces[j][1]+2]]; // [x,y,z]
+                    var x3 = [currentPositions[3*faces[j][2]], currentPositions[3*faces[j][2]+1], currentPositions[3*faces[j][2]+2]]; // [x,y,z]
+   
+                    var x13 = sub(x1,x3);
+                    var x23 = sub(x2,x3);
+                    var x43 = sub(x4,x3);
+                    var determinant = dot(x13,x13)*dot(x23,x23) - dot(x13,x23)*dot(x13,x23);
+
+                    var u = 1/determinant * (dot(x23,x23)*dot(x13,x43) - dot(x13,x23)*dot(x23,x43));
+                    var v = 1/determinant * (dot(x13,x13)*dot(x23,x43) - dot(x13,x23)*dot(x13,x43));
+                    var w = 1.0-u-v;
+
+                    var isInside =
+                        0 <= u && u <= 1 &&
+                        0 <= v && v  <= 1 &&
+                        0 <= w && w <= 1 &&
+                        Math.abs(1 - u - v - w) <= 0.0001;
+
+                    var P = add(add(scale(u,x1),scale(v,x2)), scale(w,x3));
+                    var distWP = Math.sqrt(dot(sub(x4,P),sub(x4,P)));
+                    var dMax = globals.nodeCollisionDMax;
+
+                    // trying to expand my options a bit
+                    if (isInside == true && distWP < dMax*2){ // node i is officially colliding with face j
                         console.log("Node ", i, " is colliding with face ", j, "!!")
+           
                         _index = (index + numFaceColl) * 2 * 4; // _index is the texel index,    _index + k is the element index
 
                         nodeCollisionFaceMeta_[_index] = j; // FaceIndex
@@ -671,26 +812,24 @@ function initDynamicSolver(globals){
                         nodeCollisionFaceMeta_[_index+2] = faces[j][1]; // b
                         nodeCollisionFaceMeta_[_index+3] = faces[j][2]; // c
 
-                        nodeCollisionFaceMeta_[_index+4] = u; // u
-                        nodeCollisionFaceMeta_[_index+5] = v; // v
-                        nodeCollisionFaceMeta_[_index+6] = w; // w
-                        nodeCollisionFaceMeta_[_index+7] = distWP; // d
-
+                        nodeCollisionFaceMeta_[_index+4] = -1; // u
+                        nodeCollisionFaceMeta_[_index+5] = -1; // v
+                        nodeCollisionFaceMeta_[_index+6] = -1; // FIX AFTER TESTING
+                        nodeCollisionFaceMeta_[_index+7] = -1; // d
+                        
                         numFaceColl += 1;
 
                         for (var n=0; n<3; n++){ 
                             // we just hit a face, here is a texel entry for one of the nodes on the affected face
                             fillFacesAreHitMeta_.push(j); // faceIndex
-                            fillFacesAreHitMeta_.push(n == 0 ? -1 : faces[j][0]); // affected face node 0 // change one of these to -1 (the repeated number)
-                            fillFacesAreHitMeta_.push(n == 1 ? -1 : faces[j][1]); // affected face node 1 // conditional? ifTrue : ifFalse
-                            fillFacesAreHitMeta_.push(n == 2 ? -1 : faces[j][2]); // affected face node 2
-                            fillFacesAreHitMeta_.push(u);
-                            fillFacesAreHitMeta_.push(v);
-                            fillFacesAreHitMeta_.push(w);
-                            fillFacesAreHitMeta_.push(distWP); 
+                            fillFacesAreHitMeta_.push(faces[j][0]); // affected face node 0 - a
+                            fillFacesAreHitMeta_.push(faces[j][1]); // affected face node 1 - b
+                            fillFacesAreHitMeta_.push(faces[j][2]); // affected face node 2 - c
+                            fillFacesAreHitMeta_.push(n);
+                            fillFacesAreHitMeta_.push(i); //x4
+                            fillFacesAreHitMeta_.push(-1); // FIX AFTER TESTING
+                            fillFacesAreHitMeta_.push(-1); 
                             sort.push(faces[j][n]);
-
-                            facesAreHitIndex++;
                         }
                     }
                 }
@@ -698,6 +837,8 @@ function initDynamicSolver(globals){
             index+=numFaceColl;
             meta3_[4*i+1] = numFaceColl;
         }
+
+       
 
         // sort fillFacesAreHitMeta by nodes using the sort array map, lets hope this works!
         const BLOCK_SIZE = 8;
@@ -737,6 +878,7 @@ function initDynamicSolver(globals){
     }
 
     function projectPointToPlane(A, B, C, W){ // project point W to the plane defined by triangle ABC
+        //DELETE
         // see https://stackoverflow.com/questions/9605556/how-to-project-a-point-onto-a-plane-in-3d/17661431#17661431
 
         const sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
@@ -757,6 +899,7 @@ function initDynamicSolver(globals){
 
 
     function isPInTriangleABC(A, B, C, P){
+        //DELETE
         // see: https://math.stackexchange.com/questions/4322/check-whether-a-point-is-within-a-3d-triangle
 
         const sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
@@ -764,7 +907,6 @@ function initDynamicSolver(globals){
         const cross = (u, v) => [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
         const scale = (s, v) => [s*v[0], s*v[1], s*v[2]];
         const norm = (u) => Math.sqrt(dot(u, u)); // firgure out how to get rid of square root -- my mini-mental check said yes theres a way to do it - kinda just square everything
-
 
         const AB = sub(A,B);
         const AC = sub(A,C);
@@ -775,7 +917,6 @@ function initDynamicSolver(globals){
         var n = cross(AB, AC);
         n = scale(1/norm(n), n);
 
-
         const AreaABC = dot(cross(AB,AC), n)/2; // figure out how to do signed area
         // wikipedia barycentric coordinates: "The sign is plus if the path from A to B to C then back to A goes around the triangle in a counterclockwise direction. The sign is minus if the path goes around in a clockwise direction."
         // use normal dot itself for the signed area 
@@ -784,11 +925,6 @@ function initDynamicSolver(globals){
         const gamma = 1-alpha-beta;
         
 
-        // if (0<=alpha && alpha <=1 && 0<=beta && beta <=1 && 0<=gamma && gamma <=1 && Math.abs(1-alpha-beta-gamma) <= 0.0001){
-        //     return true;
-        // }else{
-        //     return false;
-        // }
         const isInside =
         0 <= alpha && alpha <= 1 &&
         0 <= beta  && beta  <= 1 &&
@@ -965,6 +1101,7 @@ function initDynamicSolver(globals){
         creaseVectors = new Float32Array(textureDimCreases*textureDimCreases*4);
         theta = new Float32Array(textureDimCreases*textureDimCreases*4);
         lastTheta = new Float32Array(textureDimCreases*textureDimCreases*4);
+        gpuCollisionPositions = new Float32Array(nodes.length*3); //TESTING GPU POSITIONS
 
         for (var i=0;i<faces.length;i++){
             var face = faces[i];
@@ -1019,8 +1156,7 @@ function initDynamicSolver(globals){
         }
 
 
-
-        [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions);
+        [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions, 3);         
         getEdgeEdgeCollisionMeta(positions);
 
         
@@ -1070,6 +1206,8 @@ function initDynamicSolver(globals){
         updateFixed: updateFixed,
         solve: solve,
         render: render,
-        reset: reset
+        reset: reset, 
+        calculateFaceBarycentersFromPositions: calculateFaceBarycentersFromPositions, // DELETE: for barcenter viualization
+        setFaceBarycentersVisibility: setFaceBarycentersVisibility // DELETE: for barcenter viualization
     }
 }
