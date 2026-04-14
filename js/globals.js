@@ -55,7 +55,7 @@ function initGlobals(){
         creaseStiffness: 0.7,
         panelStiffness: 0.7,
         glueStiffness: 0.7,
-        nodeCollisionStiffness: 1.0, 
+        nodeCollisionStiffness: 15.0, 
         nodeCollisionDMax: 0.1,
         faceStiffness: 0.2,
 

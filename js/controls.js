@@ -472,7 +472,7 @@ function initControls(globals){
         globals.materialHasChanged = true;
     });
 
-    setSliderInput("#nodeCollisionStiffness", globals.nodeCollisionStiffness, 0, 5.0, 0.05, function(val){
+    setSliderInput("#nodeCollisionStiffness", globals.nodeCollisionStiffness, 0, 40.0, 0.5, function(val){
         globals.nodeCollisionStiffness = val;
         globals.materialHasChanged = true;
     });

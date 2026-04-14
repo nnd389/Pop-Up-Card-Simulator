@@ -48,9 +48,9 @@ function initPattern(globals){
     var greenVals = [];
     var circleParams = [];
     var patternEditingMode = false;
-    var hoverVertexIndex = null;
     var hoverHighlightCircle = null;
     var hoverRadiusPx = 12;
+    var draggedVertexIndex = null;
 
     function clearAll(){
 
@@ -87,10 +87,24 @@ function initPattern(globals){
     var SVGloader = new THREE.SVGLoader();
     $("#svgViewer").on("mousemove", function(e){
         if (!patternEditingMode) return;
+        if (draggedVertexIndex !== null) {
+            dragVertexToMouse(e);
+            return;
+        }
         updateHoveredVertex(e);
     });
+    $("#svgViewer").on("mousedown", function(e){
+        if (!patternEditingMode) return;
+        if (hoverVertexIndex === null) return;
+        draggedVertexIndex = hoverVertexIndex;
+        dragVertexToMouse(e);
+        e.preventDefault();
+    });
+    $(document).on("mouseup", function(){
+        draggedVertexIndex = null;
+    });
     $("#svgViewer").on("mouseleave", function(){
-        clearHoveredVertex();
+        if (draggedVertexIndex === null) clearHoveredVertex();
     });
 
     //filter for svg parsing
@@ -703,6 +717,7 @@ function initPattern(globals){
             line.setAttribute('x2', v2[0]);
             line.setAttribute('y2', v2[2]);
             line.setAttribute('stroke-width', strokeWidth);
+            line.setAttribute('data-edge-index', i);
 
             svg.appendChild(line);
         }
@@ -729,6 +744,7 @@ function initPattern(globals){
             text.setAttribute('font-size', fontSize);
             text.setAttribute('fill', '#000');
             text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
+            text.setAttribute('data-vertex-index', i);
 
             svg.appendChild(text);
         }
@@ -807,6 +823,99 @@ function initPattern(globals){
         if (hoverHighlightCircle) hoverHighlightCircle.style.display = 'none';
     }
 
+    function getSvgPointFromMouseEvent(e){
+        var svg = $("#svgViewer>svg").get(0);
+        if (!svg || !svg.getScreenCTM()) return null;
+        var pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        return pt.matrixTransform(svg.getScreenCTM().inverse());
+    }
+
+    function updateHoverCircleForVertex(index){
+        if (!hoverHighlightCircle || index === null || !foldData.vertices_coords[index]) return;
+        var svg = $("#svgViewer>svg").get(0);
+        if (!svg) return;
+        var viewBox = svg.viewBox.baseVal;
+        var rect = svg.getBoundingClientRect();
+        if (!rect.width || !rect.height) return;
+        var unitsPerPixelX = viewBox.width / rect.width;
+        var unitsPerPixelY = viewBox.height / rect.height;
+        var hoverRadius = hoverRadiusPx * Math.max(unitsPerPixelX, unitsPerPixelY);
+        var highlightedVertex = foldData.vertices_coords[index];
+        hoverHighlightCircle.setAttribute('cx', highlightedVertex[0]);
+        hoverHighlightCircle.setAttribute('cy', highlightedVertex[2]);
+        hoverHighlightCircle.setAttribute('r', hoverRadius * 0.75);
+        hoverHighlightCircle.style.display = 'block';
+    }
+
+    function updateConnectedEdgesForVertex(vertexIndex){
+        var svg = $("#svgViewer>svg").get(0);
+        if (!svg || !foldData.edges_vertices) return;
+        var movedVertex = foldData.vertices_coords[vertexIndex];
+        if (!movedVertex) return;
+
+        for (var i = 0; i < foldData.edges_vertices.length; i++) {
+            var edge = foldData.edges_vertices[i];
+            if (edge[0] !== vertexIndex && edge[1] !== vertexIndex) continue;
+            var line = svg.querySelector('line[data-edge-index="' + i + '"]');
+            if (!line) continue;
+            var v1 = foldData.vertices_coords[edge[0]];
+            var v2 = foldData.vertices_coords[edge[1]];
+            line.setAttribute('x1', v1[0]);
+            line.setAttribute('y1', v1[2]);
+            line.setAttribute('x2', v2[0]);
+            line.setAttribute('y2', v2[2]);
+        }
+
+        var vertexLabel = svg.querySelector('text[data-vertex-index="' + vertexIndex + '"]');
+        if (vertexLabel) {
+            var textOffset = (Math.max(svg.viewBox.baseVal.width, svg.viewBox.baseVal.height)) / 200;
+            vertexLabel.setAttribute('x', movedVertex[0] + textOffset);
+            vertexLabel.setAttribute('y', movedVertex[2] - textOffset);
+        }
+    }
+
+    function updateModelForMovedVertex(vertexIndex, oldVertex, newVertex){
+        if (!globals.model) return;
+        var nodes = globals.model.getNodes();
+        if (!nodes || !nodes[vertexIndex]) return;
+
+        var node = nodes[vertexIndex];
+        var scale = globals.scale || 1;
+        var dx = (newVertex[0] - oldVertex[0]) * scale;
+        var dz = (newVertex[2] - oldVertex[2]) * scale;
+
+        var currentOriginal = node.getOriginalPosition();
+        var newOriginal = new THREE.Vector3(currentOriginal.x + dx, currentOriginal.y, currentOriginal.z + dz);
+        node.setOriginalPosition(newOriginal.x, newOriginal.y, newOriginal.z);
+        node.moveManually(newOriginal);
+
+        for (var i = 0; i < node.beams.length; i++) {
+            node.beams[i].recalcOriginalLength(node.beams[i].type);
+        }
+
+        globals.model.syncSolver();
+        globals.nodePositionHasChanged = true;
+    }
+
+    function dragVertexToMouse(e){
+        if (draggedVertexIndex === null) return;
+        var transformedPoint = getSvgPointFromMouseEvent(e);
+        if (!transformedPoint) return;
+
+        var vertex = foldData.vertices_coords[draggedVertexIndex];
+        if (!vertex) return;
+        var oldVertex = [vertex[0], vertex[1], vertex[2]];
+
+        vertex[0] = transformedPoint.x;
+        vertex[2] = transformedPoint.y;
+
+        updateConnectedEdgesForVertex(draggedVertexIndex);
+        updateHoverCircleForVertex(draggedVertexIndex);
+        updateModelForMovedVertex(draggedVertexIndex, oldVertex, vertex);
+    }
+
     function updateHoveredVertex(e){
         var svg = $("#svgViewer>svg").get(0);
         if (!svg || !foldData.vertices_coords || foldData.vertices_coords.length === 0) {
@@ -814,10 +923,8 @@ function initPattern(globals){
             return;
         }
 
-        var pt = svg.createSVGPoint();
-        pt.x = e.clientX;
-        pt.y = e.clientY;
-        var transformedPoint = pt.matrixTransform(svg.getScreenCTM().inverse());
+        var transformedPoint = getSvgPointFromMouseEvent(e);
+        if (!transformedPoint) return;
 
         var viewBox = svg.viewBox.baseVal;
         var rect = svg.getBoundingClientRect();
@@ -848,18 +955,18 @@ function initPattern(globals){
             return;
         }
 
-        if (!hoverHighlightCircle) return;
-        var highlightedVertex = foldData.vertices_coords[nearestIndex];
+
         hoverVertexIndex = nearestIndex;
-        hoverHighlightCircle.setAttribute('cx', highlightedVertex[0]);
-        hoverHighlightCircle.setAttribute('cy', highlightedVertex[2]);
-        hoverHighlightCircle.setAttribute('r', hoverRadius * 0.75);
-        hoverHighlightCircle.style.display = 'block';
+        updateHoverCircleForVertex(nearestIndex);
+
     }
 
     function setPatternEditingMode(enabled){
         patternEditingMode = enabled;
-        if (!patternEditingMode) clearHoveredVertex();
+        if (!patternEditingMode) {
+            draggedVertexIndex = null;
+            clearHoveredVertex();
+        }
     }
     
 

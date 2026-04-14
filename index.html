@@ -307,25 +307,30 @@
                 vec3 WP = vec3(P[0]-x4[0], P[1]-x4[1], P[2]-x4[2]);
                 vec3 WPcrossN = vec3(WP[1]*normal[2]-WP[2]*normal[1], WP[2]*normal[0]-WP[0]*normal[2], WP[0]*normal[1]-WP[1]*normal[0]);
 
-                int faceHitIndex = int(nodeHitMeta[0]);
-                if (faceHitIndex == 0){
-                    force -= u*dSign*impulse*normal*kNC;
+                if (isInside == 1 && dAbs < dMax){
+                    int faceHitIndex = int(nodeHitMeta[0]);
+                    if (faceHitIndex == 0){
+                        force -= u*dSign*impulse*normal*kNC;
 
-                    //vec4 debug0 = vec4(1.0, 1.0, 1.0, 1.0);
-                    //gl_FragColor = debug0; return; 
+                        //vec4 debug0 = vec4(1.0, 1.0, 1.0, 1.0);
+                        //gl_FragColor = debug0; return; 
 
-                } else if (faceHitIndex == 1){ // CRAZZZYYYY order of the if statements matter?!?!?? must be 0 -> 2 -> 1
-                    force -= v*dSign*impulse*normal*kNC;
+                    } else if (faceHitIndex == 1){ // CRAZZZYYYY order of the if statements matter?!?!?? must be 0 -> 2 -> 1
+                        force -= v*dSign*impulse*normal*kNC;
 
-                    //vec4 debug1 = vec4(2.0, 2.0, 2.0, 2.0);
-                    //gl_FragColor = debug1; return;
+                        //vec4 debug1 = vec4(2.0, 2.0, 2.0, 2.0);
+                        //gl_FragColor = debug1; return;
 
-                } else if (faceHitIndex == 2){
-                    force -= w*dSign*impulse*normal*kNC;
+                    } else if (faceHitIndex == 2){
+                        force -= w*dSign*impulse*normal*kNC;
 
-                    //vec4 debug2 = vec4(w*impulse*normal[0], w*impulse*normal[0], w*impulse*normal[0], 3.0);
-                    //gl_FragColor = debug2; return;
-                } 
+                        //vec4 debug2 = vec4(w*impulse*normal[0], w*impulse*normal[0], w*impulse*normal[0], 3.0);
+                        //gl_FragColor = debug2; return;
+                    } 
+                }
+                
+
+
                 
                 //vec4 debug2 = vec4(sum, diff, 3.0, 4.0);
                 //gl_FragColor = debug2; return; 
