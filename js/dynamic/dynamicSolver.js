@@ -230,30 +230,30 @@ function initDynamicSolver(globals){
                 
                 
                 // FOR DEBUGGING ONLY
-                // if (meta3[3] > 0){
+                if (meta3[3] > 0){
 
-                //     // DEBUG: read back u_velocity (RGBA = whatever shader wrote, e.g. u,v,w,d)
-                //     const vectorLength = 4;
-                //     gpuMath.setProgram("packToBytes");
-                //     gpuMath.setUniformForProgram("packToBytes", "u_vectorLength", vectorLength, "1f");
-                //     gpuMath.setUniformForProgram("packToBytes", "u_floatTextureDim", [textureDim, textureDim], "2f");
-                //     gpuMath.setSize(textureDim * vectorLength, textureDim);
-                //     gpuMath.step("packToBytes", ["u_velocity"], "outputBytes");
+                    // DEBUG: read back u_velocity (RGBA = whatever shader wrote, e.g. u,v,w,d)
+                    const vectorLength = 4;
+                    gpuMath.setProgram("packToBytes");
+                    gpuMath.setUniformForProgram("packToBytes", "u_vectorLength", vectorLength, "1f");
+                    gpuMath.setUniformForProgram("packToBytes", "u_floatTextureDim", [textureDim, textureDim], "2f");
+                    gpuMath.setSize(textureDim * vectorLength, textureDim);
+                    gpuMath.step("packToBytes", ["u_velocity"], "outputBytes");
 
-                //     if (gpuMath.readyToRead()) {
-                //         const numPixels = nodes.length * vectorLength;
-                //         const height = Math.ceil(numPixels / (textureDim * vectorLength));
-                //         const pixels = new Uint8Array(height * textureDim * 4 * vectorLength);
-                //         gpuMath.readPixels(0, 0, textureDim * vectorLength, height, pixels);
-                //         const parsed = new Float32Array(pixels.buffer);
+                    if (gpuMath.readyToRead()) {
+                        const numPixels = nodes.length * vectorLength;
+                        const height = Math.ceil(numPixels / (textureDim * vectorLength));
+                        const pixels = new Uint8Array(height * textureDim * 4 * vectorLength);
+                        gpuMath.readPixels(0, 0, textureDim * vectorLength, height, pixels);
+                        const parsed = new Float32Array(pixels.buffer);
 
-                //         // print first few nodes
-                //         for (let i = 0; i < nodes.length; i++) {
-                //             console.log("u_velocity node", i, ": ", parsed[i*4], parsed[i*4 + 1], parsed[i*4 + 2], parsed[i*4 + 3]);
-                //         }
-                //         console.log("skip")
-                //     }
-                // }
+                        // print first few nodes
+                        for (let i = 0; i < nodes.length; i++) {
+                            console.log("u_velocity node", i, ": ", parsed[i*4], parsed[i*4 + 1], parsed[i*4 + 2], parsed[i*4 + 3]);
+                        }
+                        console.log("skip")
+                    }
+                }
                 //DONE
                 
                 //gpuMath.swapTextures("u_velocity", "u_lastVelocity"); // if you put collisionvelocitycalc inbetween the other two neep to put swaptextures ontop
