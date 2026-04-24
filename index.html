@@ -198,7 +198,6 @@
             }
 
             vec3 force = texture2D(u_externalForces, scaledFragCoord).xyz;
-            vec4 debug = vec4(0.0, 0.0, 0.0, 1.0);
             vec3 lastPosition = texture2D(u_lastPosition, scaledFragCoord).xyz;
             vec3 lastVelocity = texture2D(u_lastVelocity, scaledFragCoord).xyz;
             vec3 originalPosition = texture2D(u_originalPosition, scaledFragCoord).xyz;
@@ -218,7 +217,6 @@
                 vec3 x3 = getPosition(nodeOnEdgeMeta[2]);
                 vec3 x4 = getPosition(nodeOnEdgeMeta[3]);
 
-                //CONVERT TO GLSL 
                 // See https://graphics.stanford.edu/papers/cloth-sig02/cloth.pdf
                 // Solve for the unique closest pair of points on the two infinite lines containing edge i and edge j
                 vec3 x21 = x2-x1;
@@ -283,11 +281,11 @@
 
                 // FIX: Lot of room for division by zero - might need to add a bunch of Checks
 
-                int myXIndex = int(edgeIndexMeta[2]);
+                int myXIndex = int(edgeIndexMeta[0]);
                 float dist = sqrt(dot(normal,normal));
                 normal /= dist;
                 float dAbs = abs(dist);
-                float dMax = 0.01;
+                float dMax = 0.1;
 
                 float barrierFunction = -(dAbs-dMax)*(dAbs-dMax)*log(dAbs/dMax);
                 if (dAbs > dMax){ // should never happen but just in case
@@ -296,8 +294,10 @@
                 float impulse = 2.0*barrierFunction/(a*a + (1.0-a)*(1.0-a) + b*b + (1.0-b)*(1.0-b));
 
 
-                //vec4 debug5 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
-                //gl_FragColor = debug5;  return;
+                
+
+                //vec4 debug = vec4(myXIndex, a, b, -1);
+                //gl_FragColor = debug;  return;
 
                 //CONTINUE HERE forces are being distributed to the wrong nodes, 
                 // want nodes 0 1 and 3 4 but isn't working - shader/meta problem
@@ -314,12 +314,12 @@
                         //gl_FragColor = debug2; return;
 
                     } else if (myXIndex == 3){
-                        force += (1.0-b)*impulse*normal;
+                        force -= (1.0-b)*impulse*normal;
                         //vec4 debug3 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
                         //gl_FragColor = debug3; return;
                         
                     } else if (myXIndex == 4){
-                        force += b*impulse*normal;
+                        force -= b*impulse*normal;
                         //vec4 debug4 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
                         //gl_FragColor = debug4; return;
                         

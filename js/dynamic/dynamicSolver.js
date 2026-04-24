@@ -867,9 +867,9 @@ function initDynamicSolver(globals){
             var x2 = [currentPositions[3*x2i], currentPositions[3*x2i+1], currentPositions[3*x2i+2]] // [x,y,z]
 
             //for (var j=0;j<edges.length;j++){ // edge j
+            // don't loop through all j because don't want to duplicate (i,j) and (j,i)
             for (let j = i + 1; j < edges.length; j++){ // edge j
                 let Pa, Pb, a, b, normal;
-                // FIX: currently checking (i,j) and (j,i) - meaning will end up with duplicates
                 // ^ I think this problem will fix itself when I switch to broad collision detecion
                 // CHECK: parallel edge math
                 // FIX: do not check glue edges
@@ -939,14 +939,14 @@ function initDynamicSolver(globals){
 
                 // Now check distance between closest pair (clamped to finite edge)
                 var dist = Math.sqrt(dot(normal,normal));
-                if (dist <=0.01){
+                if (dist <=0.1){
                     console.log("Edge ", i, " is colliding with Edge ", j, "!!!! (and vice versa)");
 
                     // two edges just collided, here are four texel entries (one for each node involved)
-                    fillBeam.push(x1i, x2i, x3i, x4i, i, j, 1, -1);
-                    fillBeam.push(x2i, x1i, x3i, x4i, i, j, 2, -1);
-                    fillBeam.push(x3i, x4i, x1i, x2i, j, i, 3, -1);
-                    fillBeam.push(x4i, x3i, x1i, x2i, j, i, 4, -1);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 1, x1i, -1, -1);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 2, x2i, -1, -1);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 3, x3i, -1, -1);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 4, x4i, -1, -1);
 
                     sort.push(x1i, x2i, x3i, x4i);
                 }
