@@ -171,6 +171,8 @@
         uniform sampler2D u_normals;
         uniform sampler2D u_nodeCollisionFaceMeta;//[faceIndex, a, b, c, u, v, w, d] 
         uniform sampler2D u_facesAreHitMeta;//[faceIndex, a, b, c, u, v, w, d]
+        uniform sampler2D u_meta4;
+        uniform sampler2D u_beamCollisionMeta;
 
         vec4 getFromArray(float index1D, vec2 dimensions, sampler2D tex){
             vec2 index = vec2(mod(index1D, dimensions.x)+0.5, floor(index1D/dimensions.x)+0.5);
@@ -201,10 +203,143 @@
             vec3 lastVelocity = texture2D(u_lastVelocity, scaledFragCoord).xyz;
             vec3 originalPosition = texture2D(u_originalPosition, scaledFragCoord).xyz;
             vec4 meta3 = texture2D(u_meta3, scaledFragCoord);
+            vec4 meta4 = texture2D(u_meta4, scaledFragCoord);
             float kNC = u_nodeCollisionStiffness;
 
-            // start reacting NODES to collisions!!!
-            for (int j=0;j<100;j++){//for all nodes (up to 100, had to put a const int in here)
+
+            // Edge Edge Collision Reaction
+            for (int j=0;j<100;j++){//for all edges involved with an edge-edge collision (up to 100, had to put a const int in here)
+                if (j >= int(meta4[1])) break;
+                vec4 nodeOnEdgeMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0, u_textureDimNodeFaces2, u_beamCollisionMeta); //[myNodeIndex, otherNodeIndex, otherEdgeNode1Index, otherEdgeNode2Index]
+                vec4 edgeIndexMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_beamCollisionMeta); //[myEdgeIndex, OtherEdgeIndex, myXIndex, -1] // FIX
+
+                vec3 x1 = getPosition(nodeOnEdgeMeta[0]);
+                vec3 x2 = getPosition(nodeOnEdgeMeta[1]);
+                vec3 x3 = getPosition(nodeOnEdgeMeta[2]);
+                vec3 x4 = getPosition(nodeOnEdgeMeta[3]);
+
+                //CONVERT TO GLSL 
+                // See https://graphics.stanford.edu/papers/cloth-sig02/cloth.pdf
+                // Solve for the unique closest pair of points on the two infinite lines containing edge i and edge j
+                vec3 x21 = x2-x1;
+                vec3 x43 = x4-x3;
+                vec3 x31 = x3-x1;
+
+                // solve for a, b, Pa, Pb, and normal
+                float a = 0.0;
+                float b = 0.0;
+                vec3 Pa = vec3(0.0,0.0,0.0);
+                vec3 Pb = vec3(0.0,0.0,0.0);
+                vec3 normal = vec3(0.0,0.0,0.0);
+
+                vec3 c = cross(x21, x43);
+                if (dot(c,c) <= 1e-5){ // check if lines are parallel
+                    a = 0.0;
+                    Pa = x1;
+
+                    // now project point Pa onto line x43 (switch out b)
+                    b = dot(Pa-x3, x43)/dot(x43,x43); // got this from google hopefully it's right
+                    b = clamp(b,0.0,1.0);
+                    Pb = x3 + b*x43;
+                    normal = Pa-Pb;
+                } else{
+                    float det = dot(x21,x21)*dot(x43,x43) - dot(x21,x43)*dot(x21,x43);
+                    if (abs(det) < 1e-8) { // I think this is an extra parallel check
+                        continue;
+                    }
+
+                    a = (1.0/det)*(dot(x43,x43)*dot(x21,x31) - dot(x21,x43)*dot(x43,x31));
+                    b = (1.0/det)*(dot(x21,x43)*dot(x21,x31) - dot(x21,x21)*dot(x43,x31));
+                    if (0.0<=a && a<=1.0 && 0.0<=b && b<=1.0){ 
+                        //CASE 1: points Pa and Pb lie one the finite edge
+                        Pa = x1 + a*x21;
+                        Pb = x3 + b*x43;
+                    } else{ 
+                        //CASE 2: one or both points Pa and Pb do not lie on finite edge -> clamp points, measure, and project
+                        float aClamped = clamp(a,0.0,1.0); // Pa = x1 + a*x21
+                        float bClamped = clamp(b,0.0,1.0); // Pb = x3 + b*x43
+
+                        // keep whichever one moves more, then project to other line
+                        if ( abs(a-aClamped) >= abs(b-bClamped) ){ // a wins
+                            a = aClamped;
+                            Pa = x1 + a*x21;
+
+                            // now project point Pa onto line x43 (switch out b)
+                            b = dot(Pa-x3, x43)/dot(x43,x43); // got this from google hopefully it's right
+                            b = clamp(b,0.0,1.0);
+                            Pb = x3 + b*x43;
+                        } else { // b wins
+                            b = bClamped;
+                            Pb = x3 + b*x43;
+
+                            // now project point Pb onto line x21
+                            a = dot(Pb-x1, x21)/dot(x21,x21);
+                            a = clamp(a,0.0,1.0);
+                            Pa = x1 + a*x21;
+                        }
+                    } 
+                    normal = Pa-Pb;
+                }
+
+                // FIX: Lot of room for division by zero - might need to add a bunch of Checks
+
+                int myXIndex = int(edgeIndexMeta[2]);
+                float dist = sqrt(dot(normal,normal));
+                normal /= dist;
+                float dAbs = abs(dist);
+                float dMax = 0.01;
+
+                float barrierFunction = -(dAbs-dMax)*(dAbs-dMax)*log(dAbs/dMax);
+                if (dAbs > dMax){ // should never happen but just in case
+                    barrierFunction = 0.0;
+                }
+                float impulse = 2.0*barrierFunction/(a*a + (1.0-a)*(1.0-a) + b*b + (1.0-b)*(1.0-b));
+
+
+                //vec4 debug5 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
+                //gl_FragColor = debug5;  return;
+
+                //CONTINUE HERE forces are being distributed to the wrong nodes, 
+                // want nodes 0 1 and 3 4 but isn't working - shader/meta problem
+                if (dist <= dMax){ // officially colliding
+                    if (myXIndex == 1){
+                        // consider adding a collision constant like kNC
+                        force += (1.0-a)*impulse*normal;
+                        //vec4 debug1 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
+                        //gl_FragColor = debug1; return;
+
+                    } else if (myXIndex == 2){
+                        force += a*impulse*normal;
+                        //vec4 debug2 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
+                        //gl_FragColor = debug2; return;
+
+                    } else if (myXIndex == 3){
+                        force += (1.0-b)*impulse*normal;
+                        //vec4 debug3 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
+                        //gl_FragColor = debug3; return;
+                        
+                    } else if (myXIndex == 4){
+                        force += b*impulse*normal;
+                        //vec4 debug4 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
+                        //gl_FragColor = debug4; return;
+                        
+                    }
+                }
+
+
+
+                //vec4 debug = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
+                //vec4 debug = vec4(nodeOnEdgeMeta[0], nodeOnEdgeMeta[1], nodeOnEdgeMeta[2], nodeOnEdgeMeta[3]);
+                //vec4 debug = vec4(edgeIndexMeta[0], edgeIndexMeta[1], edgeIndexMeta[2], edgeIndexMeta[3]);
+                //gl_FragColor = debug; return; // node 1
+            }
+            //vec4 debug5 = vec4(0.0, 0.0, 0.0, 0.0);
+            //gl_FragColor = debug5;  return;
+
+
+
+            // Node Face Collision Reaction (Node side)
+            for (int j=0;j<100;j++){//for all nodes involved with a node-face collision (up to 100, had to put a const int in here)
                 if (j >= int(meta3[1])) break;
 
                 vec4 collisionFaceMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
@@ -241,7 +376,7 @@
 
                 float barrierFunction = -(dAbs-dMax)*(dAbs-dMax)*log(dAbs/dMax);
                 if (dAbs > dMax){ // should never happen but just in case
-                    float barrierFunction = 0.0;
+                    barrierFunction = 0.0;
                 }
                 float impulse = 2.0*barrierFunction/(1.0+u*u+v*v+w*w);
 
@@ -260,12 +395,12 @@
             // I suspect there might be a problem with you calculations, why dont you go back and double check them. 
             // Can successfully recall x1, x2, and x3, positions here which are a, b, c (MUST BE LASTPOS + ORGPOS)
 
-            // start having the faces react to collisions
-            for (int j=0;j<100;j++){//for all faces (up to 100, had to put a const int in here)
+            // Node Face Collision Reaction (Face side, i.e., three nodes)
+            for (int j=0;j<100;j++){//for all faces involved with a node-face collision (up to 100, had to put a const int in here)
                 if (j >= int(meta3[3])) break;
 
                 vec4 faceHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[faceHitIndex, -1, b, c]
-                vec4 nodeHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d]
+                vec4 nodeHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d] // FIX
 
                 vec3 normal = getFromArray(faceHitMeta[0], u_textureDimFaces, u_normals).xyz;
                 vec3 x1 = getPosition(faceHitMeta[1]);
@@ -328,10 +463,6 @@
                         //gl_FragColor = debug2; return;
                     } 
                 }
-                
-
-
-                
                 //vec4 debug2 = vec4(sum, diff, 3.0, 4.0);
                 //gl_FragColor = debug2; return; 
 

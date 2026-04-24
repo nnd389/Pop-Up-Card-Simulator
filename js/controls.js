@@ -661,7 +661,7 @@ function initControls(globals){
         if (globals.dynamicSolver && globals.dynamicSolver.setFaceBarycentersVisibility){
             globals.dynamicSolver.setFaceBarycentersVisibility(val);
         }
-    });
+    }); // FOR BARYCENTERS
 
     setLink("#aboutError", function(){
         $("#aboutErrorModal").modal("show");
