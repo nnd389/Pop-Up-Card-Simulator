@@ -76,6 +76,7 @@ function initDynamicSolver(globals){
     var textureDimNodeFaces = 0;
     var textureDimNodeFaces2 = 0;
     var textureDimNodeCollisions = 0;
+    var textureDimBeamCollisions = 0;
 
     function reset(){
         globals.gpuMath.step("zeroTexture", [], "u_position");
@@ -123,8 +124,10 @@ function initDynamicSolver(globals){
         }
 
         if (collisionsEnabled) {
-            //[meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions); 
+            [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions); 
             [meta4, beamCollisionMeta] = getEdgeEdgeCollisionMeta(positions);
+            //console.log("meta4 is: ", meta4);
+            //console.log("beamcollisionmeta is: ", beamCollisionMeta)
 
             if (meta4[1] >= 1){
                 // console.log("beamCollisionMeta is: ", beamCollisionMeta)
@@ -133,7 +136,7 @@ function initDynamicSolver(globals){
 
             globals.gpuMath.initTextureFromData("u_nodeCollisionFaceMeta", textureDimNodeCollisions, textureDimNodeCollisions, "FLOAT", nodeCollisionFaceMeta, true);
             globals.gpuMath.initTextureFromData("u_facesAreHitMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", facesAreHitMeta, true);
-            globals.gpuMath.initTextureFromData("u_beamCollisionMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", beamCollisionMeta, true); //FIX: teturedimthing
+            globals.gpuMath.initTextureFromData("u_beamCollisionMeta", textureDimBeamCollisions, textureDimBeamCollisions, "FLOAT", beamCollisionMeta, true); //FIX: teturedimthing
             globals.gpuMath.initTextureFromData("u_meta3", textureDim, textureDim, "FLOAT", meta3, true);
             globals.gpuMath.initTextureFromData("u_meta4", textureDim, textureDim, "FLOAT", meta4, true);
 
@@ -437,7 +440,7 @@ function initDynamicSolver(globals){
         //CHCK: what are the width and height of these?
         gpuMath.initTextureFromData("u_nodeCollisionFaceMeta", textureDimNodeCollisions, textureDimNodeCollisions, "FLOAT", nodeCollisionFaceMeta, true);
         gpuMath.initTextureFromData("u_facesAreHitMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", facesAreHitMeta, true);
-        gpuMath.initTextureFromData("u_beamCollisionMeta", textureDimNodeFaces2, textureDimNodeFaces2, "FLOAT", beamCollisionMeta, true); //FIX: teturedimthing
+        gpuMath.initTextureFromData("u_beamCollisionMeta", textureDimBeamCollisions, textureDimBeamCollisions, "FLOAT", beamCollisionMeta, true); //FIX: teturedimthing
 
         gpuMath.createProgram("positionCalc", vertexShader, document.getElementById("positionCalcShader").text);
         gpuMath.setUniformForProgram("positionCalc", "u_velocity", 0, "1i");
@@ -459,6 +462,9 @@ function initDynamicSolver(globals){
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_beamCollisionMeta", 10, "1i");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDim", [textureDim, textureDim], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeCollisions", [textureDimNodeCollisions, textureDimNodeCollisions], "2f");
+        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimBeamCollisions", [textureDimBeamCollisions, textureDimBeamCollisions], "2f");
+        //CONTINUE HERE: need to fix beamcollision textdure dim in all places
+
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeFaces", [textureDimNodeFaces, textureDimNodeFaces], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimNodeFaces2", [textureDimNodeFaces2, textureDimNodeFaces2], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimFaces", [textureDimFaces, textureDimFaces], "2f");
@@ -761,7 +767,7 @@ function initDynamicSolver(globals){
 
                     // trying to expand my options a bit
                     if (isInside == true && distWP < dMax*2){ // node i is officially colliding with face j
-                        console.log("Node ", i, " is colliding with face ", j, "!!")
+                        //console.log("Node ", i, " is colliding with face ", j, "!!")
            
                         _index = (index + numFaceColl) * 2 * 4; // _index is the texel index,    _index + k is the element index
 
@@ -846,7 +852,7 @@ function initDynamicSolver(globals){
         const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
         meta4_ = new Float32Array(textureDim*textureDim*4);
-        beamCollisionMeta_ = new Float32Array(textureDimNodeFaces2*textureDimNodeFaces2*4);
+        beamCollisionMeta_ = new Float32Array(textureDimBeamCollisions*textureDimBeamCollisions*4);
         var fillBeam = []; // fillbeam will be filled with beamCollisionMeta info then cleaned and sorted to fill in beamCollisionMeta_
         var sort = [];
         // beamCollisionMeta should only include INDICES not calculated values, the normal values will be calculated later in the shader again
@@ -861,18 +867,18 @@ function initDynamicSolver(globals){
 
         // compare edge i (x1 x2) to edge j (x3 x4)
         for (var i=0;i<edges.length;i++){ // edge i
+            if (edges[i].type === "glue tab beam" || edges[i].type === "glue spring beam") continue; // do not check glue beams
             var x1i = edges[i].nodes[0].index; // x1 node index
             var x2i = edges[i].nodes[1].index; // x2 node index
             var x1 = [currentPositions[3*x1i], currentPositions[3*x1i+1], currentPositions[3*x1i+2]] // [x,y,z]
             var x2 = [currentPositions[3*x2i], currentPositions[3*x2i+1], currentPositions[3*x2i+2]] // [x,y,z]
 
-            //for (var j=0;j<edges.length;j++){ // edge j
+            // FIX: switch to broad collision detection
             // don't loop through all j because don't want to duplicate (i,j) and (j,i)
             for (let j = i + 1; j < edges.length; j++){ // edge j
+                if (edges[j].type === "glue tab beam" || edges[j].type === "glue spring beam") continue; // do not check glue beams
                 let Pa, Pb, a, b, normal;
-                // ^ I think this problem will fix itself when I switch to broad collision detecion
                 // CHECK: parallel edge math
-                // FIX: do not check glue edges
 
                 var x3i = edges[j].nodes[0].index; // x3 node index
                 var x4i = edges[j].nodes[1].index; // x4 node index
@@ -937,12 +943,14 @@ function initDynamicSolver(globals){
                     normal = sub(Pa,Pb);
                 }
 
+
                 // Now check distance between closest pair (clamped to finite edge)
                 var dist = Math.sqrt(dot(normal,normal));
-                if (dist <=0.1){
-                    console.log("Edge ", i, " is colliding with Edge ", j, "!!!! (and vice versa)");
 
-                    // two edges just collided, here are four texel entries (one for each node involved)
+                if (dist <=0.2){
+                    //console.log("Edge ", i, " is colliding with Edge ", j, "!!!! (and vice versa)");
+
+                    // two edges just collided, here are four texel entries (one for each node involved) where each texel is length 8
                     fillBeam.push(x1i, x2i, x3i, x4i, 1, x1i, -1, -1);
                     fillBeam.push(x1i, x2i, x3i, x4i, 2, x2i, -1, -1);
                     fillBeam.push(x1i, x2i, x3i, x4i, 3, x3i, -1, -1);
@@ -1003,21 +1011,21 @@ function initDynamicSolver(globals){
 
 
 
-    // function getEdgeEdgeCollisionMeta(currentPositions){  // add in beamCollisionMeta_ as an arg when ready
-    //     // beamCollisionMeta_ will need to be augmented and returned
+    // function getEdgeFaceCollisionMeta(currentPositions){  
+        
     //     var fillBeam = []; // fillbeam will be filled with beamCollisionMeta info then cleaned and sorted to fill in beamCollisionMeta_
-    //     //var beamCollisionMeta; // [u, v, w, otherNodeIndex]
+        
 
     //     for (var i=0;i<edges.length;i++){ // edge i
     //         var Pi = edges[i].nodes[0].index; // P node index
     //         var Qi = edges[i].nodes[1].index; // Q node index
-    //         var P = [currentPositions[3*Pi], currentPositions[3*Pi+2], currentPositions[3*Pi+1]] // [x,y,z]
-    //         var Q = [currentPositions[3*Qi], currentPositions[3*Qi+2], currentPositions[3*Qi+1]] // [x,y,z]
+    //         var P = [currentPositions[3*Pi], currentPositions[3*Pi+1], currentPositions[3*Pi+2]] // [x,y,z]
+    //         var Q = [currentPositions[3*Qi], currentPositions[3*Qi+1], currentPositions[3*Qi+2]] // [x,y,z]
 
     //         for (var j=0;j<faces.length;j++){ // face j
-    //             var A = [currentPositions[3*faces[j][0]], currentPositions[3*faces[j][0]+2], currentPositions[3*faces[j][0]+1]]; // [x,y,z]
-    //             var B = [currentPositions[3*faces[j][1]], currentPositions[3*faces[j][1]+2], currentPositions[3*faces[j][1]+1]]; // [x,y,z]
-    //             var C = [currentPositions[3*faces[j][2]], currentPositions[3*faces[j][2]+2], currentPositions[3*faces[j][2]+1]]; // [x,y,z]
+    //             var A = [currentPositions[3*faces[j][0]], currentPositions[3*faces[j][0]+1], currentPositions[3*faces[j][0]+2]]; // [x,y,z]
+    //             var B = [currentPositions[3*faces[j][1]], currentPositions[3*faces[j][1]+1], currentPositions[3*faces[j][1]+2]]; // [x,y,z]
+    //             var C = [currentPositions[3*faces[j][2]], currentPositions[3*faces[j][2]+1], currentPositions[3*faces[j][2]+2]]; // [x,y,z]
     //             var test = false;
 
     //             var Ai = faces[j][0]; // A node index
@@ -1056,6 +1064,7 @@ function initDynamicSolver(globals){
     //             }
     //         }
     //     } 
+  
     // }
 
 
@@ -1097,6 +1106,7 @@ function initDynamicSolver(globals){
 
 
 
+
     function initTypedArrays(){
         if (collisionsEnabled) {
             console.log("Collisions are enabled!!")
@@ -1120,6 +1130,11 @@ function initDynamicSolver(globals){
         textureDimNodeFaces = calcTextureSize(numNodeFaces);
         textureDimNodeFaces2 = calcTextureSize(numNodeFaces*2*2); // for facesAreHitMeta
         textureDimNodeCollisions = calcTextureSize(faces.length*nodes.length*2); // for nodeCollisionFaceMeta
+
+        // max colliding pairs is C(E,2), 4 node entries per pair, 2 texels per entry (8 floats or 4 floats per texel)
+        var maxBeamCollisionEntries = edges.length * (edges.length - 1) / 2 * 4 * 2;
+        textureDimBeamCollisions = calcTextureSize(maxBeamCollisionEntries);
+
 
 
         var numEdges = 0;
@@ -1154,15 +1169,13 @@ function initDynamicSolver(globals){
         meta3 = new Float32Array(textureDim*textureDim*4);
         meta4 = new Float32Array(textureDim*textureDim*4);
         beamMeta = new Float32Array(textureDimEdges*textureDimEdges*4);
-        //beamCollisionMeta = new Float32Array(textureDimEdges*textureDimEdges*4); // FIX: I don't think this is the correct amount
-        // ^ uncomment when ready
         normals = new Float32Array(textureDimFaces*textureDimFaces*4);
         faceVertexIndices = new Float32Array(textureDimFaces*textureDimFaces*4);
         creaseMeta = new Float32Array(textureDimCreases*textureDimCreases*4);
         nodeFaceMeta = new Float32Array(textureDimNodeFaces*textureDimNodeFaces*4);
         nodeCollisionFaceMeta = new Float32Array(textureDimNodeCollisions*textureDimNodeCollisions*4);        
         facesAreHitMeta = new Float32Array(textureDimNodeFaces2*textureDimNodeFaces2*4);// facesAreHitMeta = [faceIndex, -1, b, c, u, v, w, d]  where abc are the triangle you are on, uvw barycentric coords, d penetration depth
-        beamCollisionMeta = new Float32Array(textureDimNodeFaces2*textureDimNodeFaces2*4); // FIX: incorrect size - but I think this should be bigger than what I need
+        beamCollisionMeta = new Float32Array(textureDimBeamCollisions*textureDimBeamCollisions*4); // FIX: pretty sure this is way too large
         // CHECK: what should the square size of facesAreHitMeta be?
         nominalTriangles = new Float32Array(textureDimFaces*textureDimFaces*4);
         nodeCreaseMeta = new Float32Array(textureDimNodeCreases*textureDimNodeCreases*4);

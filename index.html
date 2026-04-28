@@ -156,6 +156,7 @@
         precision mediump float;
         uniform vec2 u_textureDim;
         uniform vec2 u_textureDimNodeCollisions;
+        uniform vec2 u_textureDimBeamCollisions;
         uniform vec2 u_textureDimFaces;
         uniform vec2 u_textureDimNodeFaces;
         uniform vec2 u_textureDimNodeFaces2;
@@ -209,8 +210,8 @@
             // Edge Edge Collision Reaction
             for (int j=0;j<100;j++){//for all edges involved with an edge-edge collision (up to 100, had to put a const int in here)
                 if (j >= int(meta4[1])) break;
-                vec4 nodeOnEdgeMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0, u_textureDimNodeFaces2, u_beamCollisionMeta); //[myNodeIndex, otherNodeIndex, otherEdgeNode1Index, otherEdgeNode2Index]
-                vec4 edgeIndexMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_beamCollisionMeta); //[myEdgeIndex, OtherEdgeIndex, myXIndex, -1] // FIX
+                vec4 nodeOnEdgeMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[myNodeIndex, otherNodeIndex, otherEdgeNode1Index, otherEdgeNode2Index]
+                vec4 edgeIndexMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0 + 1.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[myEdgeIndex, OtherEdgeIndex, myXIndex, -1] // FIX
 
                 vec3 x1 = getPosition(nodeOnEdgeMeta[0]);
                 vec3 x2 = getPosition(nodeOnEdgeMeta[1]);
@@ -231,16 +232,16 @@
                 vec3 normal = vec3(0.0,0.0,0.0);
 
                 vec3 c = cross(x21, x43);
-                if (dot(c,c) <= 1e-5){ // check if lines are parallel
-                    a = 0.0;
-                    Pa = x1;
+                //if (dot(c,c) <= 1e-5){ // check if lines are parallel
+                    //a = 0.0;
+                    //Pa = x1;
 
                     // now project point Pa onto line x43 (switch out b)
-                    b = dot(Pa-x3, x43)/dot(x43,x43); // got this from google hopefully it's right
-                    b = clamp(b,0.0,1.0);
-                    Pb = x3 + b*x43;
-                    normal = Pa-Pb;
-                } else{
+                    //b = dot(Pa-x3, x43)/dot(x43,x43); // got this from google hopefully it's right
+                    //b = clamp(b,0.0,1.0);
+                    //Pb = x3 + b*x43;
+                    //normal = Pa-Pb;
+                //} else{
                     float det = dot(x21,x21)*dot(x43,x43) - dot(x21,x43)*dot(x21,x43);
                     if (abs(det) < 1e-8) { // I think this is an extra parallel check
                         continue;
@@ -277,7 +278,9 @@
                         }
                     } 
                     normal = Pa-Pb;
-                }
+                //}
+
+                vec3 normal2 = Pb-Pa;
 
                 // FIX: Lot of room for division by zero - might need to add a bunch of Checks
 
@@ -285,13 +288,19 @@
                 float dist = sqrt(dot(normal,normal));
                 normal /= dist;
                 float dAbs = abs(dist);
-                float dMax = 0.1;
+                float dMax = 0.2;
+
+                //float direction = (normal[0] >= 0.0) ? 1.0 : -1.0;
+                // direction = -1.0*direction;
+                // need to fix directional issue but this is not it, normal[0] can be positive or negative outside the triangle. 
+                // need something that is only positive or only negative outside the triangle. 
 
                 float barrierFunction = -(dAbs-dMax)*(dAbs-dMax)*log(dAbs/dMax);
                 if (dAbs > dMax){ // should never happen but just in case
                     barrierFunction = 0.0;
                 }
-                float impulse = 2.0*barrierFunction/(a*a + (1.0-a)*(1.0-a) + b*b + (1.0-b)*(1.0-b));
+                //float impulse = 2.0*barrierFunction/(a*a + (1.0-a)*(1.0-a) + b*b + (1.0-b)*(1.0-b));
+                float impulse = barrierFunction;
 
 
                 
@@ -301,30 +310,37 @@
 
                 //CONTINUE HERE forces are being distributed to the wrong nodes, 
                 // want nodes 0 1 and 3 4 but isn't working - shader/meta problem
+
                 if (dist <= dMax){ // officially colliding
                     if (myXIndex == 1){
                         // consider adding a collision constant like kNC
                         force += (1.0-a)*impulse*normal;
-                        //vec4 debug1 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
+                        vec4 debug1 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
                         //gl_FragColor = debug1; return;
 
                     } else if (myXIndex == 2){
                         force += a*impulse*normal;
-                        //vec4 debug2 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
+                        vec4 debug2 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
                         //gl_FragColor = debug2; return;
 
                     } else if (myXIndex == 3){
                         force -= (1.0-b)*impulse*normal;
-                        //vec4 debug3 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
+                        vec4 debug3 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
                         //gl_FragColor = debug3; return;
                         
                     } else if (myXIndex == 4){
                         force -= b*impulse*normal;
-                        //vec4 debug4 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
+                        vec4 debug4 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
                         //gl_FragColor = debug4; return;
                         
                     }
                 }
+
+                // below is same as above and want to switch it out later cuz it's really organized
+                //if      (myXIndex == 1) force += (1.0-a) * impulse * normal;
+                //else if (myXIndex == 2) force +=      a  * impulse * normal;
+                //else if (myXIndex == 3) force -= (1.0-b) * impulse * normal;  // opposite sign
+                //else if (myXIndex == 4) force -=      b  * impulse * normal;
 
 
 
