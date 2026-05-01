@@ -414,6 +414,7 @@
             // Node Face Collision Reaction (Face side, i.e., three nodes)
             for (int j=0;j<100;j++){//for all faces involved with a node-face collision (up to 100, had to put a const int in here)
                 if (j >= int(meta3[3])) break;
+                // FIX: you can skips calculating barycentric coordinates if distWP is greater than dMax
 
                 vec4 faceHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[faceHitIndex, -1, b, c]
                 vec4 nodeHitMeta = getFromArray(meta3[2]*2.0 + float(j) * 2.0 + 1.0, u_textureDimNodeFaces2, u_facesAreHitMeta); //[u,v,w,d] // FIX
@@ -1498,19 +1499,19 @@
         <!--</label>-->
     <!--</div><br/><br/>-->
     <a href="#" id="showAdvancedOptions">Show Advanced Options</a><br/><br/>
-    <button id="toggleCollisions">Enable Collisions are ON</button><br/><br/>
+    <button id="toggleCollisions">Collisions are OFF</button><br/><br/>
     
 
 </div>
 
 
 <script> // this should be moved to globals I think
-let collisionsEnabled = true;  // default ON // FIX to true
+let collisionsEnabled = false;  // default ON // FIX to true
 
 const toggleBtn = document.getElementById("toggleCollisions");
 
 // Set initial label correctly
-toggleBtn.textContent = "Enable Collisions are ON"; //FIX to ON
+toggleBtn.textContent = "Collisions are OFF"; //FIX to ON
 
 toggleBtn.addEventListener("click", function () {
     collisionsEnabled = !collisionsEnabled;

@@ -766,6 +766,7 @@ function initDynamicSolver(globals){
                     var dMax = globals.nodeCollisionDMax;
 
                     // trying to expand my options a bit
+                    // FIX: you can skips calculating barycentric coordinates if distWP is greater than dMax
                     if (isInside == true && distWP < dMax*2){ // node i is officially colliding with face j
                         //console.log("Node ", i, " is colliding with face ", j, "!!")
            

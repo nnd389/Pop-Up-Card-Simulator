@@ -663,6 +663,10 @@ function initControls(globals){
         }
     }); // FOR BARYCENTERS
 
+    if (globals.dynamicSolver && globals.dynamicSolver.setFaceBarycentersVisibility){
+        globals.dynamicSolver.setFaceBarycentersVisibility(false);
+    }
+
     setLink("#aboutError", function(){
         $("#aboutErrorModal").modal("show");
     });
