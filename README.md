@@ -17,7 +17,6 @@ in your browser. An alternative way of running the demo is by opening the projec
 # Glue Dots
 Glue pieces of paper together by adding matching cyan circles. The circle outline color should be rgb(0, 0-255, 255). 
 
-right angle v fold svg file and gif
 <div style="text-align: center;">
   <img style="width: 40%; display: inline-block;" src="assets/doc/flatVFold.png" />
   <img style="width: 50%; display: inline-block;" src="assets/doc/flatVFold2.png" />
