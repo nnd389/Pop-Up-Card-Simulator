@@ -1,9 +1,9 @@
 # Pop-Up Card Simulator
 This is the repository for Nina De La Torre's final project for Computer Graphics. This repository is an extension of Origami Simulator created by Amanda Ghassaei in 2018. Everything below the OrigamiSimulator section is from the original repository explaining the original simulator. The write up for this project is found in the same directory holding this readme, but below are some demo videos of the pop-up simulator. 
 
-Replace with bevo gif
+Replace with bevo gif OR right angle gif -- need to re-record
 
-<img style="width: 100%; max-width:500px" src="assets/doc/crane.gif" />
+<img style="width: 100%; max-width:500px" src="assets/doc/rightAngleVFold.mov" />
 
 # Demo Instructions
 To run this demo yourself, you need to open up a live server first. **In the project root directory,** run 
@@ -21,7 +21,10 @@ Glue pieces of paper together by adding matching cyan circles. The circle outlin
 
 right angle v fold svg file and gif
 </ul>
-    <img style="width: 100%;" src="assets/doc/strain.jpg" />
+    <img style="width: 100%;" src="assets/doc/flatVFold.png" />
+<ul>
+</ul>
+    <img style="width: 100%;" src="assets/doc/flatVFold2.png" />
 <ul>
 
 
@@ -30,7 +33,7 @@ Add pre-creased mountain by adding pink lines: rgb(255,0,155) or pre-creased val
 
 box with magenta vs. precreased edge. 
 </ul>
-    <img style="width: 100%;" src="assets/doc/strain.jpg" />
+    <img style="width: 100%;" src="assets/doc/flatVFoldHinge" />
 <ul>
 
 
@@ -41,7 +44,7 @@ Collision reaction defaults as off. You can turn collisions on/off by toggling t
 Go to the "Pattern" tab, turn on "Pattern Editing Mode" in the upper left corner, then hover above any node (corner) to highlight it, then click and drag to edit your crease pattern! Once you edit your pattern, go back to the Simulation tab to see the results. 
 --include picture of crease editing
 </ul>
-    <img style="width: 100%;" src="assets/doc/strain.jpg" />
+    <img style="width: 100%;" src="assets/doc/creaseEditing.png" />
 <ul>
 
 
