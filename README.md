@@ -1,9 +1,7 @@
 # Pop-Up Card Simulator
 This is the repository for Nina De La Torre's final project for Computer Graphics. This repository is an extension of Origami Simulator created by Amanda Ghassaei in 2018. Everything below the OrigamiSimulator section is from the original repository explaining the original simulator. The write up for this project is found in the same directory holding this readme, but below are some demo videos of the pop-up simulator. 
 
-Replace with bevo gif OR right angle gif -- need to re-record
-
-<img style="width: 100%; max-width:500px" src="assets/doc/rightAngleVFold.mov" />
+<img style="width: 100%; max-width:500px" src="assets/doc/RightVFold.gif" />
 
 # Demo Instructions
 To run this demo yourself, you need to open up a live server first. **In the project root directory,** run 
@@ -20,13 +18,10 @@ in your browser. An alternative way of running the demo is by opening the projec
 Glue pieces of paper together by adding matching cyan circles. The circle outline color should be rgb(0, 0-255, 255). 
 
 right angle v fold svg file and gif
-</ul>
-    <img style="width: 100%;" src="assets/doc/flatVFold.png" />
-<ul>
-</ul>
-    <img style="width: 100%;" src="assets/doc/flatVFold2.png" />
-<ul>
-
+<div style="text-align: center;">
+  <img style="width: 40%; display: inline-block;" src="assets/doc/flatVFold.png" />
+  <img style="width: 50%; display: inline-block;" src="assets/doc/flatVFold2.png" />
+</div>
 
 # Pre-Creased Edges
 Add pre-creased mountain by adding pink lines: rgb(255,0,155) or pre-creased valley folds by adding purple lines: rgb(155,0,255). Pre-creased edges are useful when you need a pop-up mechanism to "pop" a certain way. You could use magenta lines (freely swinging hinges), but this could end up with cases where the paper folds the wrong way. You could also use driven creases like a regular mountain fold (red) instead of a pre-creased mountain, but driven creases all have the same target angle, and your pop-up mechanisms might have different solution angles. 
@@ -42,7 +37,6 @@ Collision reaction defaults as off. You can turn collisions on/off by toggling t
 
 # Crease Pattern Editor
 Go to the "Pattern" tab, turn on "Pattern Editing Mode" in the upper left corner, then hover above any node (corner) to highlight it, then click and drag to edit your crease pattern! Once you edit your pattern, go back to the Simulation tab to see the results. 
---include picture of crease editing
 </ul>
     <img style="width: 100%;" src="assets/doc/creaseEditing.png" />
 <ul>
