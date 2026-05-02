@@ -1,5 +1,5 @@
 # Pop-Up Card Simulator
-This is the repository for Nina De La Torre's final project for Computer Graphics. This repository is an extension of Origami Simulator created by Amanda Ghassaei in 2018. Everything below the OrigamiSimulator section is from the original repository explaining the original simulator. The write up for this project is found in the same directory holding this readme, but below are some demo videos of the pop-up simulator. 
+This is the repository for Nina De La Torre's final project for Computer Graphics. This repository is an extension of Origami Simulator created by Amanda Ghassaei in 2018. Everything below the OrigamiSimulator section is from the original repository explaining the original simulator. The write up for this project is found in the same directory holding this readme titled Nina_Graphics_Honors_Final_Project_Report.pdf, but below are some demo videos of the pop-up simulator. 
 
 <img style="width: 100%; max-width:500px" src="assets/doc/RightVFold.gif" />
 
