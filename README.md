@@ -26,14 +26,21 @@ right angle v fold svg file and gif
 # Pre-Creased Edges
 Add pre-creased mountain by adding pink lines: rgb(255,0,155) or pre-creased valley folds by adding purple lines: rgb(155,0,255). Pre-creased edges are useful when you need a pop-up mechanism to "pop" a certain way. You could use magenta lines (freely swinging hinges), but this could end up with cases where the paper folds the wrong way. You could also use driven creases like a regular mountain fold (red) instead of a pre-creased mountain, but driven creases all have the same target angle, and your pop-up mechanisms might have different solution angles. 
 
-box with magenta vs. precreased edge. 
-</ul>
-    <img style="width: 100%;" src="assets/doc/flatVFoldHinge" />
-<ul>
+<div style="text-align: center;">
+  <img style="width: 30%; display: inline-block;" src="assets/doc/boxMagentaPink.png" />
+  <img style="width: 30%; display: inline-block;" src="assets/doc/boxPatternPink.png" />
+</div>
 
+<div style="text-align: center;">
+  <img style="width: 45%; max-width:1000px" src="assets/doc/boxMagentaSim.gif" />
+  <img style="width: 45%; max-width:1000px" src="assets/doc/boxPinkSim.gif" />
+  
+</div>
 
 # Collision Handling
 Collision reaction defaults as off. You can turn collisions on/off by toggling the "Collisions are ON/OFF" switch in the upper right corner. Collision reaction still needs tuning, as self penetration still occurs often and the maximum distance has to be pretty large in order to detect them in time. I recomend setting "Num simulation steps per frame: " in Advanced Settings>Animation Settings to something really low (like 1-3), and messing with maximum distance slider in Simulation Settings. 
+
+<img style="width: 100%; max-width:500px" src="assets/doc/edgeCollision.gif" />
 
 # Crease Pattern Editor
 Go to the "Pattern" tab, turn on "Pattern Editing Mode" in the upper left corner, then hover above any node (corner) to highlight it, then click and drag to edit your crease pattern! Once you edit your pattern, go back to the Simulation tab to see the results. 
