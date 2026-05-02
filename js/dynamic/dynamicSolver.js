@@ -337,6 +337,7 @@ function initDynamicSolver(globals){
         }
         if (!faceBarycenterGeometry) faceBarycenterGeometry = new THREE.SphereGeometry(0.02, 8, 8);
         if (!faceBarycenterMaterial) faceBarycenterMaterial = new THREE.MeshBasicMaterial({color: 0x0c7bdc});
+        faceBarycenterGroup.visible = globals.showFaceBarycenters;
         while (faceBarycenterGroup.children.length > 0){
             faceBarycenterGroup.remove(faceBarycenterGroup.children[0]);
         }
