@@ -163,6 +163,7 @@
         uniform float u_dt;
         uniform float u_nodeCollisionStiffness;
         uniform float u_nodeCollisionDMax;
+        uniform float u_edgeCollisionDMax;
         uniform sampler2D u_lastPosition;
         uniform sampler2D u_lastVelocity;
         uniform sampler2D u_originalPosition;
@@ -187,6 +188,37 @@
             return texture2D(u_lastPosition, scaledIndex).xyz + texture2D(u_originalPosition, scaledIndex).xyz;
         }
 
+        bool isLineSegmentPQinTriangleABC(vec3 P, vec3 Q, vec3 A, vec3 B, vec3 C){
+            const float EPS = 1e-6;
+
+            vec3 PQ = P - Q;
+            vec3 PA = P - A;
+            vec3 AB = B - A;
+            vec3 AC = C - A;
+
+            vec3 n = cross(AB, AC);
+            float d = dot(PQ, n);
+            vec3 e = cross(PQ, PA);
+
+            // Parallel (or nearly)
+            if (abs(d) < EPS) {
+                return false; // handle coplanar separately if needed
+            }
+
+            float t = dot(PA, n) / d;
+            float v = dot(AC, e) / d;
+            float w = -dot(AB, e) / d;
+            float u = 1.0 - v - w;
+
+            if (u >= 0.0 && v >= 0.0 && w >= 0.0 &&
+                u <= 1.0 && v <= 1.0 && w <= 1.0 &&
+                t >= 0.0 && t <= 1.0) {
+                return true;
+            }
+
+            return false;
+        }
+
         void main(){
             vec2 fragCoord = gl_FragCoord.xy;
             vec2 scaledFragCoord = fragCoord/u_textureDim;
@@ -208,10 +240,11 @@
 
 
             // Edge Edge Collision Reaction
-            for (int j=0;j<100;j++){//for all edges involved with an edge-edge collision (up to 100, had to put a const int in here)
+            // j < 1000; this means that each edge can be involved in max 300 edge edge collisions
+            for (int j=0;j<300;j++){//for all edges involved with an edge-edge collision (up to 100, had to put a const int in here)
                 if (j >= int(meta4[1])) break;
-                vec4 nodeOnEdgeMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[myNodeIndex, otherNodeIndex, otherEdgeNode1Index, otherEdgeNode2Index]
-                vec4 edgeIndexMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0 + 1.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[myEdgeIndex, OtherEdgeIndex, myXIndex, -1] // FIX
+                vec4 nodeOnEdgeMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[x1i, x2i, x3i, x4i]
+                vec4 edgeIndexMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0 + 1.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[myXIndex, myNodeIndex, isInside, -5] // isInside = direction
 
                 vec3 x1 = getPosition(nodeOnEdgeMeta[0]);
                 vec3 x2 = getPosition(nodeOnEdgeMeta[1]);
@@ -288,48 +321,61 @@
                 float dist = sqrt(dot(normal,normal));
                 normal /= dist;
                 float dAbs = abs(dist);
-                float dMax = 0.2;
-
-                //float direction = (normal[0] >= 0.0) ? 1.0 : -1.0;
-                // direction = -1.0*direction;
-                // need to fix directional issue but this is not it, normal[0] can be positive or negative outside the triangle. 
-                // need something that is only positive or only negative outside the triangle. 
+                //float dMax = 0.2;
+                float dMax = u_edgeCollisionDMax;
 
                 float barrierFunction = -(dAbs-dMax)*(dAbs-dMax)*log(dAbs/dMax);
                 if (dAbs > dMax){ // should never happen but just in case
                     barrierFunction = 0.0;
                 }
-                //float impulse = 2.0*barrierFunction/(a*a + (1.0-a)*(1.0-a) + b*b + (1.0-b)*(1.0-b));
-                float impulse = barrierFunction;
+                float impulse = 2.0*barrierFunction/(a*a + (1.0-a)*(1.0-a) + b*b + (1.0-b)*(1.0-b));
+                //float impulse = barrierFunction;
 
 
-                
+                bool isInside = false;
+                vec3 xOpp1;
+                vec3 xOpp2;
+                bool isInside1 = false;
+                bool isInside2 = false;
+                float direction = 1.0;
+                if (edgeIndexMeta[2] >= 0.0){
+                    xOpp1 = getPosition(edgeIndexMeta[2]);
+                    isInside1 = isInside1 = isLineSegmentPQinTriangleABC(x1, x2, x3, x4, xOpp1);
+                }
+                if (edgeIndexMeta[3] >= 0.0){
+                    xOpp2 = getPosition(edgeIndexMeta[3]);
+                    isInside2 = isInside2 = isLineSegmentPQinTriangleABC(x1, x2, x3, x4, xOpp2);
+                }
+                if (isInside1 || isInside2){
+                    direction = -1.0;
+                }
+                //float direction = edgeIndexMeta[1]; //FIX: direction should be recalculated on shader - since we will move to AABB
+
+
 
                 //vec4 debug = vec4(myXIndex, a, b, -1);
                 //gl_FragColor = debug;  return;
 
-                //CONTINUE HERE forces are being distributed to the wrong nodes, 
-                // want nodes 0 1 and 3 4 but isn't working - shader/meta problem
-
                 if (dist <= dMax){ // officially colliding
+
                     if (myXIndex == 1){
                         // consider adding a collision constant like kNC
-                        force += (1.0-a)*impulse*normal;
+                        force += direction*(1.0-a)*impulse*normal;
                         vec4 debug1 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
                         //gl_FragColor = debug1; return;
 
                     } else if (myXIndex == 2){
-                        force += a*impulse*normal;
+                        force += direction*a*impulse*normal;
                         vec4 debug2 = vec4(meta4[0], meta4[1], meta4[2], myXIndex);
                         //gl_FragColor = debug2; return;
 
                     } else if (myXIndex == 3){
-                        force -= (1.0-b)*impulse*normal;
+                        force -= direction*(1.0-b)*impulse*normal;
                         vec4 debug3 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
                         //gl_FragColor = debug3; return;
                         
                     } else if (myXIndex == 4){
-                        force -= b*impulse*normal;
+                        force -= direction*b*impulse*normal;
                         vec4 debug4 = vec4(meta4[0], meta4[1], meta4[2], meta4[3]);
                         //gl_FragColor = debug4; return;
                         
@@ -355,7 +401,8 @@
 
 
             // Node Face Collision Reaction (Node side)
-            for (int j=0;j<100;j++){//for all nodes involved with a node-face collision (up to 100, had to put a const int in here)
+            // I put j < 1000; this means that each node can be involved in max 300 node-face collisions on the node hitting side
+            for (int j=0;j<300;j++){//for all nodes involved with a node-face collision (up to 100, had to put a const int in here)
                 if (j >= int(meta3[1])) break;
 
                 vec4 collisionFaceMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
@@ -412,7 +459,8 @@
             // Can successfully recall x1, x2, and x3, positions here which are a, b, c (MUST BE LASTPOS + ORGPOS)
 
             // Node Face Collision Reaction (Face side, i.e., three nodes)
-            for (int j=0;j<100;j++){//for all faces involved with a node-face collision (up to 100, had to put a const int in here)
+            // I put j < 1000; this means that each node can be involved in max 300 node-face collisions on the face hit side
+            for (int j=0;j<300;j++){//for all faces involved with a node-face collision (up to 100, had to put a const int in here)
                 if (j >= int(meta3[3])) break;
                 // FIX: you can skips calculating barycentric coordinates if distWP is greater than dMax
 
@@ -1507,6 +1555,10 @@
     <!--</div><br/><br/>-->
     <a href="#" id="showAdvancedOptions">Show Advanced Options</a><br/><br/>
     <button id="toggleCollisions">Collisions are OFF</button><br/><br/>
+    <button id="toggleNodeClamp">Node Clamping is OFF</button><br/><br/>
+    
+<!-- <button id="snapGlueDots">SNAP glue dots together</button><br/> -->
+    
     
 
 </div>
@@ -1526,9 +1578,33 @@ toggleBtn.addEventListener("click", function () {
 
     toggleBtn.textContent =
         collisionsEnabled
-            ? "Enable Collisions are ON"
-            : "Enable Collisions are OFF";
+            ? "Collisions are ON"
+            : "Collisions are OFF";
 });
+
+let nodeClampEnabled = false;
+globals.nodeClampEnabled = false;
+
+const clampBtn = document.getElementById("toggleNodeClamp");
+clampBtn.addEventListener("click", function () {
+    nodeClampEnabled = !nodeClampEnabled;
+    globals.nodeClampEnabled = nodeClampEnabled;
+    console.log("Glue Dot Clamping is", nodeClampEnabled ? "ON" : "OFF");
+    clampBtn.textContent = nodeClampEnabled
+        ? "Glue Dot Clamping is ON"
+        : "Glue Dot Clamping is OFF";
+});
+
+// const snapGlueDotsBtn = document.getElementById("snapGlueDots");
+// snapGlueDotsBtn.addEventListener("click", function () {
+//     if (!globals || !globals.model || !globals.model.snapGlueDotsTogether) {
+//         console.warn("Model is not ready yet.");
+//         return;
+//     }
+//     globals.model.snapGlueDotsTogether();
+// });
+
+
 </script>
 
 <div id="controls">
@@ -1604,6 +1680,10 @@ toggleBtn.addEventListener("click", function () {
             </div>
             <div class="sliderInput" id="nodeCollisionDMax">
                 <span class="label-slider">Node Collision dMax : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
+                <input value="" placeholder="" class="float form-control" type="text">
+            </div>
+            <div class="sliderInput" id="edgeCollisionDMax">
+                <span class="label-slider">Edge Collision dMax : </span><div class="flat-slider ui-slider ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
                 <input value="" placeholder="" class="float form-control" type="text">
             </div>
             <div class="sliderInput" id="percentDamping">

@@ -57,6 +57,7 @@ function initGlobals(){
         glueStiffness: 0.7,
         nodeCollisionStiffness: 15.0, 
         nodeCollisionDMax: 0.1,
+        edgeCollisionDMax: 0.1,
         faceStiffness: 0.2,
 
         //dynamic sim settings

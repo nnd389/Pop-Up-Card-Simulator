@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   height="300px"
+   version="1.1"
+   width="300px"
+   id="svg14"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2" />
+  <line
+     stroke="#000000"
+     stroke-width="2"
+     x1="28.107252"
+     x2="128.10724"
+     y1="135.76512"
+     y2="135.76512"
+     id="line4" />
+  <line
+     stroke="#000000"
+     stroke-width="2"
+     x1="128.10724"
+     x2="128.10724"
+     y1="135.76512"
+     y2="235.76514"
+     id="line6" />
+  <line
+     stroke="#000000"
+     stroke-width="2"
+     x1="128.10724"
+     x2="28.107252"
+     y1="235.76514"
+     y2="235.76514"
+     id="line8" />
+  <line
+     stroke="#000000"
+     stroke-width="2"
+     x1="28.107252"
+     x2="28.107252"
+     y1="235.76514"
+     y2="135.76512"
+     id="line10" />
+  <line
+     stroke="#0000ff"
+     stroke-width="2"
+     x1="78.107239"
+     x2="78.107239"
+     y1="135.76512"
+     y2="235.76514"
+     id="line12" />
+  <line
+     stroke="#0000ff"
+     stroke-width="2.13169"
+     x1="126.65927"
+     x2="78.059814"
+     y1="136.9534"
+     y2="190.90607"
+     id="line12-9"
+     style="stroke:#ffff00;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
+  <line
+     stroke="#0000ff"
+     stroke-width="2.13169"
+     x1="253.73946"
+     x2="205.14001"
+     y1="172.22173"
+     y2="226.17439"
+     id="line12-9-7"
+     style="stroke:#000000;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
+  <line
+     stroke="#0000ff"
+     stroke-width="2.13169"
+     x1="204.99171"
+     x2="205.22626"
+     y1="171.93784"
+     y2="225.37656"
+     id="line12-9-7-0"
+     style="stroke:#ff009b;stroke-width:0.861;stroke-dasharray:none;stroke-opacity:1" />
+  <line
+     stroke="#0000ff"
+     stroke-width="2.13169"
+     x1="29.216261"
+     x2="77.815704"
+     y1="136.95833"
+     y2="190.911"
+     id="line12-9-6"
+     style="stroke:#ffff00;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
+  <line
+     stroke="#0000ff"
+     stroke-width="2.13169"
+     x1="156.45284"
+     x2="205.05229"
+     y1="172.22173"
+     y2="226.17441"
+     id="line12-9-6-5"
+     style="stroke:#000000;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
+  <line
+     stroke="#0000ff"
+     stroke-width="2.13169"
+     x1="156.16046"
+     x2="253.57251"
+     y1="172.44424"
+     y2="171.75294"
+     id="line12-9-6-5-6"
+     style="stroke:#000000;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
+  <circle
+     style="fill:none;stroke:#00ffff;stroke-opacity:1"
+     id="path1"
+     cx="77.863022"
+     cy="189.97662"
+     r="3.4655759" />
+  <circle
+     style="fill:none;stroke:#00ffff;stroke-opacity:1"
+     id="path1-3"
+     cx="205.18166"
+     cy="225.64619"
+     r="3.4655759" />
+  <circle
+     style="fill:none;stroke:#00feff;stroke-opacity:1"
+     id="path1-3-0"
+     cx="253.68161"
+     cy="173.21169"
+     r="3.4655759" />
+  <circle
+     style="fill:none;stroke:#00feff;stroke-opacity:1"
+     id="path1-3-0-1"
+     cx="128.08423"
+     cy="136.63721"
+     r="3.4655759" />
+  <circle
+     style="fill:none;stroke:#00fdff;stroke-opacity:1"
+     id="path1-3-0-1-3"
+     cx="28.451445"
+     cy="136.61101"
+     r="3.4655759" />
+  <circle
+     style="fill:none;stroke:#00fdff;stroke-opacity:1"
+     id="path1-3-0-1-3-0"
+     cx="157.57996"
+     cy="172.38716"
+     r="3.4655759" />
+</svg>

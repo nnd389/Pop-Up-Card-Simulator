@@ -477,8 +477,13 @@ function initControls(globals){
         globals.materialHasChanged = true;
     });
 
-    setSliderInput("#nodeCollisionDMax", globals.nodeCollisionDMax, 0.01, 2.0, 0.05, function(val){
+    setSliderInput("#nodeCollisionDMax", globals.nodeCollisionDMax, 0.01, 0.3, 0.05, function(val){
         globals.nodeCollisionDMax = val;
+        globals.materialHasChanged = true;
+    });
+
+    setSliderInput("#edgeCollisionDMax", globals.edgeCollisionDMax, 0.01, 0.3, 0.05, function(val){
+        globals.edgeCollisionDMax = val;
         globals.materialHasChanged = true;
     });
 

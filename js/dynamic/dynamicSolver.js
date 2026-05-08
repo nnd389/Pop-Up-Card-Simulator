@@ -126,6 +126,7 @@ function initDynamicSolver(globals){
         if (collisionsEnabled) {
             [meta3, nodeCollisionFaceMeta, facesAreHitMeta] = getNodeFaceCollisionMeta(positions); 
             [meta4, beamCollisionMeta] = getEdgeEdgeCollisionMeta(positions);
+            // CONTINUE AT CLAMPING BUTTON FROM CLAUDE
             //console.log("meta4 is: ", meta4);
             //console.log("beamcollisionmeta is: ", beamCollisionMeta)
 
@@ -288,6 +289,14 @@ function initDynamicSolver(globals){
     }
 
     function render(){
+        var clampedNodes = []; // this should only happen ONCE - should be moved to pattern or somthing
+        for (var j = 0; j<edges.length; j++){
+            var type = edges[j].type;
+            if (type === "glue spring beam"){
+                clampedNodes.push([edges[j].nodes[0].index, edges[j].nodes[1].index]);
+            }
+        }
+                
 
         var vectorLength = 4;
         globals.gpuMath.setProgram("packToBytes");
@@ -313,6 +322,13 @@ function initDynamicSolver(globals){
                 positions[3*i] = nodePosition.x;
                 positions[3*i+1] = nodePosition.y;
                 positions[3*i+2] = nodePosition.z;
+                if (globals.nodeClampEnabled) {
+                    //var clamp = [[10,5], [4,1], [6,0]] for flat v-folf
+                    //var clamp = [[17,8], [23,9], [22,10], [15,4], [20,5], [21,6], [16,7]] // for right angle v-fold
+                    applyNodeClamps(clampedNodes, positions);
+                }
+                
+
                 if (shouldUpdateColors){
                     if (nodeError>globals.strainClip) nodeError = globals.strainClip;
                     var scaledVal = (1-nodeError/globals.strainClip) * 0.7;
@@ -323,12 +339,37 @@ function initDynamicSolver(globals){
                     colors[3*i+2] = color.b;
                 }
             }
+            
             $errorOutput.html((globalError/nodes.length).toFixed(7) + " %");
             renderFaceBarycenters(); //DELETE - for visualizing barycenters
         } else {
             console.log("shouldn't be here");
         }
     }
+
+
+    function applyNodeClamps(clampedNodes, positions) {
+        //console.log("clampedNodes.length is: ", clampedNodes.length)
+        for (var k = 0; k < clampedNodes.length; k++) {
+            var i = clampedNodes[k][0];
+            var j = clampedNodes[k][1];
+
+            var ax = (positions[3*i]   + positions[3*j])   / 2;
+            var ay = (positions[3*i+1] + positions[3*j+1]) / 2;
+            var az = (positions[3*i+2] + positions[3*j+2]) / 2;
+            positions[3*i]   = positions[3*j]   = ax;
+            positions[3*i+1] = positions[3*j+1] = ay;
+            positions[3*i+2] = positions[3*j+2] = az;
+        }
+    }
+
+
+
+
+
+
+
+
     //DELETE - for visualizing barycenters
     function initFaceBarycenterRenderData(){
         if (!faceBarycenterGroup){
@@ -471,6 +512,7 @@ function initDynamicSolver(globals){
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_textureDimFaces", [textureDimFaces, textureDimFaces], "2f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionStiffness", globals.nodeCollisionStiffness, "1f");
         gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionDMax", globals.nodeCollisionDMax, "1f");
+        gpuMath.setUniformForProgram("collisionVelocityCalc", "u_edgeCollisionDMax", globals.edgeCollisionDMax, "1f");
 
         gpuMath.createProgram("velocityCalcVerlet", vertexShader, document.getElementById("velocityCalcVerletShader").text);
         gpuMath.setUniformForProgram("velocityCalcVerlet", "u_position", 0, "1i");
@@ -619,6 +661,7 @@ function initDynamicSolver(globals){
             globals.gpuMath.setProgram("collisionVelocityCalc");
             globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionStiffness", globals.nodeCollisionStiffness, "1f");
             globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_nodeCollisionDMax", globals.nodeCollisionDMax, "1f");
+            globals.gpuMath.setUniformForProgram("collisionVelocityCalc", "u_edgeCollisionDMax", globals.edgeCollisionDMax, "1f");
             globals.gpuMath.setProgram("velocityCalc");
             globals.gpuMath.setUniformForProgram("velocityCalc", "u_axialStiffness", globals.axialStiffness, "1f");
             globals.gpuMath.setUniformForProgram("velocityCalc", "u_faceStiffness", globals.faceStiffness, "1f");
@@ -786,7 +829,7 @@ function initDynamicSolver(globals){
                         numFaceColl += 1;
 
                         for (var n=0; n<3; n++){ 
-                            // we just hit a face, here is a texel entry for one of the nodes on the affected face
+                            // we just hit a face, here is a row entry for one of the nodes on the affected face
                             fillFacesAreHitMeta_.push(j); // faceIndex
                             fillFacesAreHitMeta_.push(faces[j][0]); // affected face node 0 - a
                             fillFacesAreHitMeta_.push(faces[j][1]); // affected face node 1 - b
@@ -852,6 +895,7 @@ function initDynamicSolver(globals){
         const cross = (u, v) => [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
         const scale = (s, v) => [s*v[0], s*v[1], s*v[2]];
         const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+        const getNodePos = (nodeIndex) => [currentPositions[3*nodeIndex], currentPositions[3*nodeIndex+1], currentPositions[3*nodeIndex+2]];
 
         meta4_ = new Float32Array(textureDim*textureDim*4);
         beamCollisionMeta_ = new Float32Array(textureDimBeamCollisions*textureDimBeamCollisions*4);
@@ -949,14 +993,66 @@ function initDynamicSolver(globals){
                 // Now check distance between closest pair (clamped to finite edge)
                 var dist = Math.sqrt(dot(normal,normal));
 
-                if (dist <=0.2){
+                //if (dist <= globals.edgeCollisionDMax){
+                if (dist <= 0.1){
                     //console.log("Edge ", i, " is colliding with Edge ", j, "!!!! (and vice versa)");
 
-                    // two edges just collided, here are four texel entries (one for each node involved) where each texel is length 8
-                    fillBeam.push(x1i, x2i, x3i, x4i, 1, x1i, -1, -1);
-                    fillBeam.push(x1i, x2i, x3i, x4i, 2, x2i, -1, -1);
-                    fillBeam.push(x1i, x2i, x3i, x4i, 3, x3i, -1, -1);
-                    fillBeam.push(x1i, x2i, x3i, x4i, 4, x4i, -1, -1);
+                    // Edge i and j are close enough; check whether edge i lies in any triangle face containing edge j.
+                    // x1/x2 are the edge-i endpoints; x3/x4 are edge-j endpoints.
+                    // if edge i is inside of at least one face containing face j, switch direction sign
+                    let edgeIInsideFaceOfEdgeJ = 0;
+                    let direction = 1.0;
+                    let xOppositeI = [];
+                    for (let f = 0; f < faces.length; f++){
+                        const Ai = faces[f][0];
+                        const Bi = faces[f][1];
+                        const Ci = faces[f][2];
+
+                        // face contains edge j iff both edge-j nodes are in this face
+                        const containsX3 = (Ai === x3i || Bi === x3i || Ci === x3i);
+                        const containsX4 = (Ai === x4i || Bi === x4i || Ci === x4i);
+                        if (!containsX3 || !containsX4) continue;
+
+                        // store the "opposite" node index from this face (the vertex not on edge j)
+                        if (Ai !== x3i && Ai !== x4i){
+                            xOppositeI.push(Ai);
+                        } else if (Bi !== x3i && Bi !== x4i){
+                            xOppositeI.push(Bi);
+                        } else if (Ci !== x3i && Ci !== x4i){
+                            xOppositeI.push(Ci);
+                        }
+
+                        const A = getNodePos(Ai);
+                        const B = getNodePos(Bi);
+                        const C = getNodePos(Ci);
+
+                        const [, , , , isInside] = isLineSegmentPQinTriangleABC(x1, x2, A, B, C);
+                        if (isInside){
+                            edgeIInsideFaceOfEdgeJ += 1;
+                            break;
+                        }
+                    }
+                    let xOpposite1 = -1;
+                    let xOpposite2 = -1;
+
+                    if (edgeIInsideFaceOfEdgeJ >=1){
+                        //console.log("Edge ", i, "is INSIDE a triangle containing egde", j);
+                        direction = -1.0;
+                        xOpposite1 = (xOppositeI.length > 0) ? xOppositeI[0] : -1;
+                        xOpposite2 = (xOppositeI.length > 1) ? xOppositeI[1] : -1;
+
+                        // CONTINUE HERE: direction should be recalculated on the gpu (since you are planning to move to AABB)
+                        // isLinePQinFaceABC is already in the shader, but you need to store opposing face nodes here to pass to gpu so it can collect ABC properly
+                        // awesome it works! - when implementing aabb you can get rid of direction, since it's already calculated on GPU
+
+                    }
+
+
+                    // two edges just collided, here are four row entries (one for each node involved) where each row is length 8
+                    fillBeam.push(x1i, x2i, x3i, x4i, 1, direction, xOpposite1, xOpposite2);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 2, direction, xOpposite1, xOpposite2);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 3, direction, xOpposite1, xOpposite2);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 4, direction, xOpposite1, xOpposite2);
 
                     sort.push(x1i, x2i, x3i, x4i);
                 }
@@ -1002,6 +1098,36 @@ function initDynamicSolver(globals){
     }
 
 
+    function isLineSegmentPQinTriangleABC(P,Q,A,B,C){
+        // See Real Time Collision Detection by Christer Ericson seciton 5.3.6 Intersecting Ray or segment against triangle
+        const sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
+        const dot = (u, v) => u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+        const cross = (u, v) => [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
+
+        var n = cross(sub(B,A), sub(C,A));
+        var d = dot(sub(P,Q), n);
+        var e = cross(sub(P,Q), sub(P,A));
+
+
+        const EPS = 1e-8;
+        if (Math.abs(d) < EPS) {
+            // if d = 0, the ray is parrallel to the triangle, but what about a ray that interects the triangle at a smaller line segment instead of a point?
+            return [0,0,0,0,false]; // treat coplanar separately later if needed
+        }
+
+        var t = dot(sub(P,A), n) / d;
+        var v = dot(sub(C,A), e) / d;
+        var w = -dot(sub(B,A), e) / d;
+        var u = 1.0-v-w;
+
+        if (u>=0 && v>=0 && w>=0 && t>=0 && u<=1 && v<=1 && w<=1 && t<=1){
+            return [u, v, w, t, true];
+        }else{
+            return [u, v, w, t, false];
+        }
+    }
+
+
 
 
 
@@ -1036,7 +1162,7 @@ function initDynamicSolver(globals){
 
                 
     //             // don't test edges against the face it's a part of  -> if (Pi === Ai || Pi === Bi || Pi === Ci) && (Qi === Ai || Qi === Bi || Qi === Ci) continue
-    //             // Also dont test edges against races that it's touching
+    //             // Also dont test edges against faces that it's touching
     //             if (Pi === Ai || Pi === Bi || Pi === Ci || Qi === Ai || Qi === Bi || Qi === Ci){
     //                 continue;
     //             }
@@ -1046,23 +1172,20 @@ function initDynamicSolver(globals){
     //             var w = 0;
     //             var t = 0;
     //             [u, v, w, t, test] = isLineSegmentPQinTriangleABC(P,Q,A,B,C); 
-    //             if (test==true){
-    //                 //edge i is officially colliding with face j
-    //                 console.log("Edge ", i, "is collidding with face ", j);
-    //                 fillBeam.push(u); // add one row per node on beam
-    //                 fillBeam.push(v);
-    //                 fillBeam.push(w);
-    //                 fillBeam.push(Pi);
 
-    //                 fillBeam.push(u);
-    //                 fillBeam.push(v);
-    //                 fillBeam.push(w);
-    //                 fillBeam.push(Qi);
-    //                 //var beamCollisionMeta; // [u, v, w, otherNodeIndex]
-    //                 //console.log("u, w, w, t are: ", u, v, w, t);
-    //                 // NEXT STEP: figure out how to log info correctly like in nodefacemeta
-    //                 // probably will take a similar form to nodefacemeta, but beam meta with -1 
-    //                 // need to store the info accordingly, how is beam meta stored?
+    //             //if (test==true){
+    //             if (u>=-globals.edgeCollisionDMax && 
+    //                 v>=-globals.edgeCollisionDMax && 
+    //                 w>=-globals.edgeCollisionDMax && 
+    //                 t>=-globals.edgeCollisionDMax && 
+    //                 u<=1 && v<=1 && w<=1 && 
+    //                 t<=1+-globals.edgeCollisionDMax){ // if this is true then your edge is vaguely near the triangle
+    //                 //edge i is officially intersecting with face j
+    //                 console.log("Edge ", i, "is close to face ", j);
+
+    //                 // now that we know that edge i is near face j (and potentially inside face j), 
+    //                 // check edge i against edges of face j? 
+
     //             }
     //         }
     //     } 
@@ -1070,34 +1193,7 @@ function initDynamicSolver(globals){
     // }
 
 
-    function isLineSegmentPQinTriangleABC(P,Q,A,B,C){
-        // See Real Time Collision Detection by Christer Ericson seciton 5.3.6 Intersecting Ray or segment against triangle
-        const sub = (u, v) => [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
-        const dot = (u, v) => u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
-        const cross = (u, v) => [u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
 
-        var n = cross(sub(B,A), sub(C,A));
-        var d = dot(sub(P,Q), n);
-        var e = cross(sub(P,Q), sub(P,A));
-
-
-        const EPS = 1e-8;
-        if (Math.abs(d) < EPS) {
-            // if d = 0, the ray is parrallel to the triangle, but what about a ray that interects the triangle at a smaller line segment instead of a point?
-            return [0,0,0,0,false]; // treat coplanar separately later if needed
-        }
-
-        var t = dot(sub(P,A), n) / d;
-        var v = dot(sub(C,A), e) / d;
-        var w = -dot(sub(B,A), e) / d;
-        var u = 1.0-v-w;
-
-        if (u>=0 && v>=0 && w>=0 && t>=0 && u<=1 && v<=1 && w<=1 && t<=1){
-            return [u, v, w, t, true];
-        }else{
-            return [u, v, w, t, false];
-        }
-    }
 
 
 

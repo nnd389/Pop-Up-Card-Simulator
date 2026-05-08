@@ -206,10 +206,6 @@ Node.prototype.getSimMass = function(){
     return 1;
 };
 
-
-
-
-
 //deallocate
 
 Node.prototype.destroy = function(){
