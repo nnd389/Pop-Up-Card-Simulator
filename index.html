@@ -338,18 +338,17 @@
                 bool isInside1 = false;
                 bool isInside2 = false;
                 float direction = 1.0;
-                if (edgeIndexMeta[2] >= 0.0){
+                if (edgeIndexMeta[2] >= 0.0){ // check if xOpp1 exists
                     xOpp1 = getPosition(edgeIndexMeta[2]);
                     isInside1 = isInside1 = isLineSegmentPQinTriangleABC(x1, x2, x3, x4, xOpp1);
                 }
-                if (edgeIndexMeta[3] >= 0.0){
+                if (edgeIndexMeta[3] >= 0.0){ // check if xOpp2 exists
                     xOpp2 = getPosition(edgeIndexMeta[3]);
                     isInside2 = isInside2 = isLineSegmentPQinTriangleABC(x1, x2, x3, x4, xOpp2);
                 }
                 if (isInside1 || isInside2){
                     direction = -1.0;
                 }
-                //float direction = edgeIndexMeta[1]; //FIX: direction should be recalculated on shader - since we will move to AABB
 
 
 
@@ -406,11 +405,13 @@
                 if (j >= int(meta3[1])) break;
 
                 vec4 collisionFaceMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
+                vec4 nodeHittingMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0 + 1.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[nodeIndex, -1, -1, -1]
                 vec3 normal = getFromArray(collisionFaceMeta[0], u_textureDimFaces, u_normals).xyz; //might need to add some eps things if ab and ac are close to colinear
                 vec3 x1 = getPosition(collisionFaceMeta[1]);
                 vec3 x2 = getPosition(collisionFaceMeta[2]);
                 vec3 x3 = getPosition(collisionFaceMeta[3]);
-                vec3 x4 = vec3(lastPosition[0] + originalPosition[0], lastPosition[1]+ originalPosition[1], lastPosition[2]+ originalPosition[2]);
+                vec3 x4 = getPosition(nodeHittingMeta[0]);
+                //vec3 x4 = vec3(lastPosition[0] + originalPosition[0], lastPosition[1]+ originalPosition[1], lastPosition[2]+ originalPosition[2]);
                 // consider redundancy and store i and use i to get position of W instead of using my position for W
 
                 // See https://graphics.stanford.edu/papers/cloth-sig02/cloth.pdf

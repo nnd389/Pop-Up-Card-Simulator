@@ -741,17 +741,154 @@ function initDynamicSolver(globals){
         globals.gpuMath.setUniformForProgram("positionCalcVerlet", "u_creasePercent", percent, "1f");
     }
 
-    function updateWorldPosition(){ //DELETE written by codex
-        if (!worldPosition || worldPosition.length !== nodes.length * 3){
-            worldPosition = new Float32Array(nodes.length * 3);
+
+
+
+
+    function AABBcollisionDetection(renderPositions){ // CONTINUE HERE
+        //meta4_, beamCollisionMeta_
+        //meta3_, nodeCollisionFaceMeta_, facesAreHitMeta_]
+        var meta3_ = []; // populate meta3 and meta4 using sort
+
+        var fillNodes = [];
+        var sortNodes = [];
+        var nodeCollisionFaceMeta_ = [];
+
+        var fillFaces = [];
+        var sortFaces = [];
+        var facesAreHitMeta_ = [];
+
+        var meta4_ = [];
+        var fillBeams = [];
+        var sortBeams = [];
+        var beamCollisionMeta_ = [];
+
+        for (var i=0; i<faces.length; i++){
+            var boxI = getBoundingBox([i], renderPositions); // FIX: you are recomputing this bounding box every time but there is no need to
+            var faceI = faces[i]; //list of nodes on face i
+
+            // FIX: compute bounding boxes at the start! then traverse the existing boxes
+
+            for (var j=i+1; j<faces.length; j++){ // this should correctly get rid of duplicates
+                var boxJ = getBoundingBox([j], renderPositions);
+                var faceJ = faces[j]; //list of nodes on face j
+
+
+                if (boxesOverlap(boxI, boxJ)){
+                    // Bounding box of face i is collidding with bounding box of face j!
+                    // log 6 node-face collisions and 9 edge-edge collisions
+
+                    // 6 node collidding texels 
+                    // nodeCollisionFaceMeta = [FaceIndex, x1i, x2i, x3i, x4i, -1, -1, -1]
+                    // FIX: dont add a node on face collision if this node is attatched to the face
+                    for (var k=0; k<faceI.length; k++){ // NODES (on face j) THAT ARE HITTING FACE I
+                        fillNodes.push(i, faceI[0], faceI[1], faceI[2], faceJ[k], -1, -1, -1);
+                        sortNodes.push(faceJ[k]); //sort by the node that is doing the hitting (sort by x4i)
+
+                        // everytime we fill in a nodeCollisionFaceMeta row we have three rows in facesAreHitMeta
+                        for (var n=0; n<3; n++){
+                            //facesAreHitMeta = [faceIndex, x1i, x2i, x3i, 0/1/2, x4i, -1, -1]
+                            fillFaces.push(i, faceI[0], faceI[1], faceI[2], n, faceJ[k], -1, -1);
+                            sortFaces.push(faceI[n]); // sort by the affected node (sort by xi1/x2i/x3i)
+                        }
+                    }
+
+
+                    for (var k=0; k<faceI.length; k++){ // nodes on face i that are hitting face j
+                        fillNodes.push(j, faceJ[0], faceJ[1], faceJ[2], faceI[k], -1, -1, -1);
+                        sortNodes.push(faceI[k]); //sort by the node that is doing the hitting (sort by x4i)
+                        // everytime we fill in a nodeCollisionFaceMeta row we have three rows in facesAreHitMeta
+                        for (var n=0; n<3; n++){
+                            //facesAreHitMeta = [faceIndex, x1i, x2i, x3i, 0/1/2, x4i, -1, -1]
+                            fillFaces.push(j, faceJ[0], faceJ[1], faceJ[2], n, faceI[k], -1, -1);
+                            sortFaces.push(faceJ[n]); // sort by the affected node (sort by xi1/x2i/x3i)
+                        }
+                    }
+
+                    // 9 edge-edge collisions equates to 36 beamCollisionMetaEntries
+                    // I dont think I have a list of edges on each face?
+                    // beamCollisionMeta = [x1i, x2i, x3i, x4i, 1/2/3/4, -1, xOpposite1, xOpposite2];
+                    // no need to skip glue edges because glue springs are not part of any face
+                    // FIX: do not add collisions for edges that share a connecting node
+                    for (var k=0; k<4; k++){// faceI to faceJ
+                        //FIX: how to find xOpp2???
+                        //CONTINUE HERE
+                        // you already have code to find x opposite nodes, make it into a function and incorporate it here
+                        //fillBeam.push(faceI[0], faceI[1], faceJ[0], faceJ[1], -1, faceI[2], -111);
+
+
+                    }
+
+
+                    
+
+                    // 18 face collided texels, (6 nodes collidding * 3 (nodes/face) = 18) each texel length 8
+
+
+
+
+
+
+                    console.log("Bounding box of face ", i, "is collidding with bounding box of face ", j, "!");
+                }
+            }
         }
-        for (var i=0;i<nodes.length;i++){
-            var rgbaIndex = i*4;
-            var xyzIndex = i*3;
-            worldPosition[xyzIndex] = lastPosition[rgbaIndex] + originalPosition[rgbaIndex];
-            worldPosition[xyzIndex+1] = lastPosition[rgbaIndex+1] + originalPosition[rgbaIndex+1];
-            worldPosition[xyzIndex+2] = lastPosition[rgbaIndex+2] + originalPosition[rgbaIndex+2];
+    }
+
+    function boxesOverlap(a, b){
+        return (
+            a.min[0] <= b.max[0] &&
+            a.max[0] >= b.min[0] &&
+
+            a.min[1] <= b.max[1] &&
+            a.max[1] >= b.min[1] &&
+
+            a.min[2] <= b.max[2] &&
+            a.max[2] >= b.min[2]
+        );
+    }
+
+    function getBoundingBox(faceIndices, currentPositions){ //faceIndices is an array [int, int, int]
+        // Returns an axis-aligned bounding box for the nodes used by the given face indices.
+        // currentPositions is expected to be an xyz-packed array; when omitted, use the
+        // solver's latest rendered positions.
+        //FIX: should also include "prophecyPositions": a linear estimate of where this node will be at the next render step
+        if (!faceIndices || faceIndices.length === 0) return null;
+        currentPositions = currentPositions || positions;
+
+        var min = [Infinity, Infinity, Infinity];
+        var max = [-Infinity, -Infinity, -Infinity];
+        var foundNode = false;
+
+        for (var i=0;i<faceIndices.length;i++){
+            var faceIndex = faceIndices[i];
+            var face = faces[faceIndex];
+            if (!face) continue;
+
+            for (var j=0;j<face.length;j++){
+                var nodeIndex = face[j];
+                var positionIndex = 3*nodeIndex;
+                var x = currentPositions[positionIndex];
+                var y = currentPositions[positionIndex+1];
+                var z = currentPositions[positionIndex+2];
+
+                if (x < min[0]) min[0] = x;
+                if (y < min[1]) min[1] = y;
+                if (z < min[2]) min[2] = z;
+                if (x > max[0]) max[0] = x;
+                if (y > max[1]) max[1] = y;
+                if (z > max[2]) max[2] = z;
+
+                foundNode = true;
+            }
         }
+
+        if (!foundNode) return null; // foundNode prevents this function from returning invalvid min max that contains infinite
+
+        return {
+            min: min,
+            max: max
+        };
     }
 
     function getNodeFaceCollisionMeta(currentPositions){ 
@@ -815,20 +952,20 @@ function initDynamicSolver(globals){
                         //console.log("Node ", i, " is colliding with face ", j, "!!")
            
                         _index = (index + numFaceColl) * 2 * 4; // _index is the texel index,    _index + k is the element index
-
+                        //sorted by node
                         nodeCollisionFaceMeta_[_index] = j; // FaceIndex
                         nodeCollisionFaceMeta_[_index+1] = faces[j][0]; // a
                         nodeCollisionFaceMeta_[_index+2] = faces[j][1]; // b
-                        nodeCollisionFaceMeta_[_index+3] = faces[j][2]; // c
+                        nodeCollisionFaceMeta_[_index+3] = faces[j][2]; // c 
 
-                        nodeCollisionFaceMeta_[_index+4] = -1; 
+                        nodeCollisionFaceMeta_[_index+4] = i; // the node that is hitting
                         nodeCollisionFaceMeta_[_index+5] = -1; 
                         nodeCollisionFaceMeta_[_index+6] = -1; 
                         nodeCollisionFaceMeta_[_index+7] = -1; 
                         
                         numFaceColl += 1;
 
-                        for (var n=0; n<3; n++){ 
+                        for (var n=0; n<3; n++){  
                             // we just hit a face, here is a row entry for one of the nodes on the affected face
                             fillFacesAreHitMeta_.push(j); // faceIndex
                             fillFacesAreHitMeta_.push(faces[j][0]); // affected face node 0 - a
@@ -838,7 +975,7 @@ function initDynamicSolver(globals){
                             fillFacesAreHitMeta_.push(i); //x4
                             fillFacesAreHitMeta_.push(-1); 
                             fillFacesAreHitMeta_.push(-1); 
-                            sort.push(faces[j][n]);
+                            sort.push(faces[j][n]); // sorted by node
                         }
                     }
                 }
@@ -1036,25 +1173,20 @@ function initDynamicSolver(globals){
                     let xOpposite2 = -1;
 
                     if (edgeIInsideFaceOfEdgeJ >=1){
-                        //console.log("Edge ", i, "is INSIDE a triangle containing egde", j);
+                        // Edge i is INSIDE a triangle containing egde j);
                         direction = -1.0;
                         xOpposite1 = (xOppositeI.length > 0) ? xOppositeI[0] : -1;
                         xOpposite2 = (xOppositeI.length > 1) ? xOppositeI[1] : -1;
-
-                        // CONTINUE HERE: direction should be recalculated on the gpu (since you are planning to move to AABB)
-                        // isLinePQinFaceABC is already in the shader, but you need to store opposing face nodes here to pass to gpu so it can collect ABC properly
-                        // awesome it works! - when implementing aabb you can get rid of direction, since it's already calculated on GPU
-
                     }
 
 
                     // two edges just collided, here are four row entries (one for each node involved) where each row is length 8
-                    fillBeam.push(x1i, x2i, x3i, x4i, 1, direction, xOpposite1, xOpposite2);
-                    fillBeam.push(x1i, x2i, x3i, x4i, 2, direction, xOpposite1, xOpposite2);
-                    fillBeam.push(x1i, x2i, x3i, x4i, 3, direction, xOpposite1, xOpposite2);
-                    fillBeam.push(x1i, x2i, x3i, x4i, 4, direction, xOpposite1, xOpposite2);
-
-                    sort.push(x1i, x2i, x3i, x4i);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 1, -1, xOpposite1, xOpposite2);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 2, -1, xOpposite1, xOpposite2);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 3, -1, xOpposite1, xOpposite2);
+                    fillBeam.push(x1i, x2i, x3i, x4i, 4, -1, xOpposite1, xOpposite2);
+                    
+                    sort.push(x1i, x2i, x3i, x4i); // sorted by node
                 }
             }
         }
