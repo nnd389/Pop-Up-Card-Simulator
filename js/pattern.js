@@ -47,6 +47,7 @@ function initPattern(globals){
     var badColors = [];//store any bad colors in svg file to show user
     var greenVals = [];
     var circleParams = [];
+    var anchorNodeParams = [];
     var patternEditingMode = false;
     var hoverHighlightCircle = null;
     var hoverRadiusPx = 12;
@@ -316,7 +317,7 @@ function initPattern(globals){
             const stroke = getComputedStyle(element).stroke; // stroke works!
             const [r, g, b] = stroke.match(/\d+/g).map(Number);
 
-            _circleParams.push([cx, cy, radius, g]);
+            _circleParams.push([cx, cy, radius, g, r]);
 
             if (r==0 && b==255 && g>=1 && g<=255) {
                 _verticesRaw.push({x:cx, y:0, z:cy});
@@ -730,24 +731,24 @@ function initPattern(globals){
         svg.appendChild(hoverHighlightCircle);
 
         // //---- draw vertex indices ----
-        // var fontSize = scale / 50;   // tweak as needed
-        // var textOffset = scale / 200;
+        var fontSize = scale / 50;   // tweak as needed
+        var textOffset = scale / 200;
 
-        // for (var i = 0; i < foldData.vertices_coords.length; i++) {
-        //     var v = foldData.vertices_coords[i];
+        for (var i = 0; i < foldData.vertices_coords.length; i++) {
+            var v = foldData.vertices_coords[i];
 
-        //     var text = document.createElementNS(ns, 'text');
-        //     text.textContent = i;
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
 
-        //     text.setAttribute('x', v[0] + textOffset);
-        //     text.setAttribute('y', v[2] - textOffset);
-        //     text.setAttribute('font-size', fontSize);
-        //     text.setAttribute('fill', '#000');
-        //     text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
-        //     text.setAttribute('data-vertex-index', i);
+            text.setAttribute('x', v[0] + textOffset);
+            text.setAttribute('y', v[2] - textOffset);
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', '#000');
+            text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
+            text.setAttribute('data-vertex-index', i);
 
-        //     svg.appendChild(text);
-        // }
+            svg.appendChild(text);
+        }
 
         // // ---- draw face indices ----
 
@@ -1317,7 +1318,7 @@ function initPattern(globals){
             }
         }
 
-        var circleSpringParams = []
+        var circleSpringParams = [];
         for (var i=0;i<fold.vertices_coords.length;i++){
             var x = fold.vertices_coords[i][0];
             var y = fold.vertices_coords[i][dim-1];
@@ -1327,12 +1328,17 @@ function initPattern(globals){
                 var cy = circleParams[j][1];
                 var rad = circleParams[j][2];
                 var g = circleParams[j][3];
+                var r = circleParams[j][4];
                 
-                if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad){
+                if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad && r==0){
                     circleSpringParams.push([i, g]);
+                } else if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad && r==255){
+                    anchorNodeParams.push([i]);
+                    
                 }
             }
         }
+        console.log("AnchornodeParams is: ", anchorNodeParams);
 
         for (var i=0;i<circleSpringParams.length;i++){
             var gI = circleSpringParams[i][1];
