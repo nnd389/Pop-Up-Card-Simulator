@@ -8,6 +8,7 @@ function initPattern(globals){
 
     var foldData = {};
     var rawFold = {};
+    var patternHasCuts = false;
 
     function clearFold(){
         foldData.vertices_coords = [];
@@ -19,6 +20,11 @@ function initPattern(globals){
         delete foldData.vertices_vertices;
         delete foldData.faces_vertices;
         delete foldData.vertices_edges;
+        delete foldData.objects_vertices;
+        delete foldData.objects_edges;
+        delete foldData.vertices_objects;
+        patternHasCuts = false;
+
         rawFold = {};
     }
 
@@ -81,6 +87,7 @@ function initPattern(globals){
         badColors = [];
         greenVals = [];
         circleParams = [];
+        anchorNodeParams = [];
     }
 
     clearAll();
@@ -786,31 +793,31 @@ function initPattern(globals){
 
         // // ---- draw edge indices ----
 
-        // for (var i = 0; i < foldData.edges_vertices.length; i++) {
-        //     var edge = foldData.edges_vertices[i];
+        for (var i = 0; i < foldData.edges_vertices.length; i++) {
+            var edge = foldData.edges_vertices[i];
 
-        //     if (edge.length < 2) continue; // safety check
+            if (edge.length < 2) continue; // safety check
 
-        //     var v0 = foldData.vertices_coords[edge[0]];
-        //     var v1 = foldData.vertices_coords[edge[1]];
+            var v0 = foldData.vertices_coords[edge[0]];
+            var v1 = foldData.vertices_coords[edge[1]];
 
-        //     // Compute midpoint of edge
-        //     var mx = 0.5 * (v0[0] + v1[0]) + 2;
-        //     var my = 0.5 * (v0[2] + v1[2]) + 2;
+            // Compute midpoint of edge
+            var mx = 0.5 * (v0[0] + v1[0]) + 2;
+            var my = 0.5 * (v0[2] + v1[2]) + 2;
 
-        //     var text = document.createElementNS(ns, 'text');
-        //     text.textContent = i;
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
 
-        //     text.setAttribute('x', mx);
-        //     text.setAttribute('y', my);          // using x–z plane like edges
-        //     text.setAttribute('font-size', fontSize);
-        //     text.setAttribute('fill', 'red');
-        //     text.setAttribute('text-anchor', 'middle');
-        //     text.setAttribute('dominant-baseline', 'middle');
-        //     text.setAttribute('pointer-events', 'none');
+            text.setAttribute('x', mx);
+            text.setAttribute('y', my);          // using x–z plane like edges
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', 'red');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('pointer-events', 'none');
 
-        //     svg.appendChild(text);
-        // }
+            svg.appendChild(text);
+        }
 
 
 
@@ -1169,6 +1176,12 @@ function initPattern(globals){
         delete fold.vertices_edges;  
 
         foldData = triangulatePolys(fold, is2d);
+        foldData = makeObjectsVertices(foldData, globals.vertTol);// Group vertices by their enclosed boundary object
+        foldData = liftObjectsForGlueSprings(foldData);// Lift some objects higher than others when glue springs are present
+
+
+        console.log("Here is fold data after adding objects?", foldData)
+
 
         mountains = FOLD.filter.mountainEdges(foldData);
         //preMountains = FOLD.filter.preMountainEdges(foldData);
@@ -1211,8 +1224,203 @@ function initPattern(globals){
         return fold;
     }
 
+
+    function makeObjectsVertices(fold, tol){
+        var boundaryData = getBoundaryObjects(fold);
+        var objectsVertices = [];
+        var verticesObjects = [];
+        var boundaryVertices = {};
+
+        for (var i=0;i<fold.vertices_coords.length;i++){
+            verticesObjects.push(null);
+        }
+
+        for (var i=0;i<boundaryData.objectsEdges.length;i++){
+            var vertexSet = {};
+            for (var j=0;j<boundaryData.objectsEdges[i].length;j++){
+                var edgeIndex = boundaryData.objectsEdges[i][j];
+                var edge = fold.edges_vertices[edgeIndex];
+                vertexSet[edge[0]] = true;
+                vertexSet[edge[1]] = true;
+                boundaryVertices[edge[0]] = true;
+                boundaryVertices[edge[1]] = true;
+            }
+            objectsVertices.push(Object.keys(vertexSet).map(function(vertexIndex){
+                return parseInt(vertexIndex, 10);
+            }).sort(function(a, b){ return a-b; }));
+        }
+
+        for (var objectIndex=0;objectIndex<objectsVertices.length;objectIndex++){
+            for (var j=0;j<objectsVertices[objectIndex].length;j++){
+                verticesObjects[objectsVertices[objectIndex][j]] = objectIndex;
+            }
+        }
+
+        for (var vertexIndex=0;vertexIndex<fold.vertices_coords.length;vertexIndex++){
+            if (boundaryVertices[vertexIndex]) continue;
+            var containingObjectIndex = raycastObjectForVertex(fold, vertexIndex, boundaryData.edgeObject, tol);
+            if (containingObjectIndex === null) continue;
+            objectsVertices[containingObjectIndex].push(vertexIndex);
+            verticesObjects[vertexIndex] = containingObjectIndex;
+        }
+
+        for (var i=0;i<objectsVertices.length;i++){
+            objectsVertices[i] = _.uniq(objectsVertices[i]).sort(function(a, b){ return a-b; });
+        }
+
+        fold.objects_vertices = objectsVertices;
+        fold.objects_edges = boundaryData.objectsEdges;
+        fold.vertices_objects = verticesObjects;
+        return fold;
+    }
+
+    function getBoundaryObjects(fold){
+        var edgeObject = [];
+        var boundaryVertexEdges = [];
+        var objectsEdges = [];
+        var visitedEdges = {};
+
+        for (var i=0;i<fold.edges_vertices.length;i++){
+            edgeObject.push(null);
+            if (fold.edges_assignment[i] != "B") continue;
+            var edge = fold.edges_vertices[i];
+            if (!boundaryVertexEdges[edge[0]]) boundaryVertexEdges[edge[0]] = [];
+            if (!boundaryVertexEdges[edge[1]]) boundaryVertexEdges[edge[1]] = [];
+            boundaryVertexEdges[edge[0]].push(i);
+            boundaryVertexEdges[edge[1]].push(i);
+        }
+
+        for (var i=0;i<fold.edges_vertices.length;i++){
+            if (fold.edges_assignment[i] != "B" || visitedEdges[i]) continue;
+
+            var stack = [i];
+            var objectEdges = [];
+            visitedEdges[i] = true;
+
+            while (stack.length>0){
+                var edgeIndex = stack.pop();
+                var edge = fold.edges_vertices[edgeIndex];
+                objectEdges.push(edgeIndex);
+
+                for (var j=0;j<2;j++){
+                    var vertexIndex = edge[j];
+                    var connectedEdges = boundaryVertexEdges[vertexIndex] || [];
+                    for (var k=0;k<connectedEdges.length;k++){
+                        var connectedEdgeIndex = connectedEdges[k];
+                        if (visitedEdges[connectedEdgeIndex]) continue;
+                        visitedEdges[connectedEdgeIndex] = true;
+                        stack.push(connectedEdgeIndex);
+                    }
+                }
+            }
+
+            if (!isClosedBoundaryObject(fold, objectEdges)) continue;
+
+            var objectIndex = objectsEdges.length;
+            objectEdges = objectEdges.sort(function(a, b){ return a-b; });
+            for (var j=0;j<objectEdges.length;j++){
+                edgeObject[objectEdges[j]] = objectIndex;
+            }
+            objectsEdges.push(objectEdges);
+        }
+
+        return {
+            objectsEdges: objectsEdges,
+            edgeObject: edgeObject
+        };
+    }
+
+    function isClosedBoundaryObject(fold, objectEdges){
+        if (objectEdges.length == 0) return false;
+        var degreeByVertex = {};
+
+        for (var i=0;i<objectEdges.length;i++){
+            var edge = fold.edges_vertices[objectEdges[i]];
+            degreeByVertex[edge[0]] = (degreeByVertex[edge[0]] || 0) + 1;
+            degreeByVertex[edge[1]] = (degreeByVertex[edge[1]] || 0) + 1;
+        }
+
+        var vertices = Object.keys(degreeByVertex);
+        for (var i=0;i<vertices.length;i++){
+            if (degreeByVertex[vertices[i]] < 2) return false;
+        }
+        return true;
+    }
+
+    function raycastObjectForVertex(fold, vertexIndex, edgeObject, tol){
+        var point = getPatternPoint(fold.vertices_coords[vertexIndex]);
+        var closestHit = null;
+        var epsilon = tol || 1e-9;
+
+        for (var i=0;i<fold.edges_vertices.length;i++){
+            var objectIndex = edgeObject[i];
+            if (objectIndex === null) continue;
+
+            var edge = fold.edges_vertices[i];
+            var point1 = getPatternPoint(fold.vertices_coords[edge[0]]);
+            var point2 = getPatternPoint(fold.vertices_coords[edge[1]]);
+
+            if (Math.abs(point1.y-point2.y) <= epsilon) continue;
+            if ((point1.y > point.y) == (point2.y > point.y)) continue;
+
+            var intersectionX = point1.x + (point.y-point1.y)*(point2.x-point1.x)/(point2.y-point1.y);
+            if (intersectionX <= point.x + epsilon) continue;
+
+            if (closestHit === null || intersectionX < closestHit.x){
+                closestHit = {
+                    x: intersectionX,
+                    objectIndex: objectIndex
+                };
+            }
+        }
+
+        return closestHit ? closestHit.objectIndex : null;
+    }
+
+    function getPatternPoint(vertex){
+        return {
+            x: vertex[0],
+            y: vertex.length > 2 ? vertex[2] : vertex[1]
+        };
+    }
+
+    function liftObjectsForGlueSprings(fold){
+        if (fold.edges_assignment.indexOf("GS") == 0) return fold; // if there are no glue springs return
+        //if (fold.edges_assignment.indexOf("C") < 0) return fold; // if there are any cuts return
+        console.log("pattern has cuts", patternHasCuts);
+        if (patternHasCuts) return fold; // if there are any cuts return (because our object finding algorithm is incorrect for cuts)
+console.log("Lifting")
+
+        for (var i=0;i<fold.objects_vertices.length;i++){
+            var objectVertices = fold.objects_vertices[i];
+            if (objectVertices.length == 0) continue;
+
+            var averageX = 0;
+            var averageY = 0;
+            for (var j=0;j<objectVertices.length;j++){
+                var point = getPatternPoint(fold.vertices_coords[objectVertices[j]]);
+                averageX += point.x;
+                averageY += point.y;
+            }
+            averageX /= objectVertices.length;
+            averageY /= objectVertices.length;
+
+            var objectHeight = averageX - averageY;
+            for (var j=0;j<objectVertices.length;j++){
+                var vertex = fold.vertices_coords[objectVertices[j]];
+                if (vertex.length === 2) vertex = [vertex[0], 0, vertex[1]];
+                vertex[1] = objectHeight;
+                fold.vertices_coords[objectVertices[j]] = vertex;
+            }
+        }
+
+        return fold;
+    }
+
+
     function addGlueSprings(fold){ // FIX: this is copied from getFacesAndVerticesForEdges - need to delete glueparams stuff there
         // I'm adding glue edges to foldata instead of glueparams, delete glueparams
+        anchorNodeParams = [];
         const originalEdgesLength = fold.edges_vertices.length; // hopefully this fixes any length changing issues
         var dim = fold.vertices_coords[0].length;
 
@@ -1338,6 +1546,10 @@ function initPattern(globals){
                 }
             }
         }
+        var anchorNodeIndices = [];
+        for (var i=0;i<anchorNodeParams.length;i++) anchorNodeIndices.push(anchorNodeParams[i][0]);
+        fold.anchorNodeIndices = _.uniq(anchorNodeIndices);
+        
         console.log("AnchornodeParams is: ", anchorNodeParams);
 
         for (var i=0;i<circleSpringParams.length;i++){
@@ -1430,6 +1642,7 @@ function initPattern(globals){
                 var assignment = fold.edges_assignment[edgeIndex];
                 groups[groupIndex].push(edgeIndex);
                 if (assignment == "C"){
+                    patternHasCuts == true;
                     //split cut edge into two boundary edges
                     groups.push([fold.edges_vertices.length]);
                     groupIndex++;

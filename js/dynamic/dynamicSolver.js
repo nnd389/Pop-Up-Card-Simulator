@@ -1512,7 +1512,6 @@ function initDynamicSolver(globals){
             console.log("Collisions are off")
         }
 
-        console.log("Inside dynamicsolver, anchornodeparams is: ", anchorNodeParams);
 
         textureDim = calcTextureSize(nodes.length);
 

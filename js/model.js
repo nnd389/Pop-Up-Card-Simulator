@@ -276,9 +276,15 @@ function initModel(globals){
         for (var i=0;i<_vertices.length;i++){
             nodes.push(new Node(_vertices[i].clone(), nodes.length));
         }
-        // _nodes[_faces[0][0]].setFixed(true);
-        // _nodes[_faces[0][1]].setFixed(true);
-        // _nodes[_faces[0][2]].setFixed(true);
+        
+        if (fold.anchorNodeIndices && fold.anchorNodeIndices.length){
+            for (var i=0;i<fold.anchorNodeIndices.length;i++){
+                var anchorNodeIndex = fold.anchorNodeIndices[i];
+                if (anchorNodeIndex >= 0 && anchorNodeIndex < nodes.length){
+                    nodes[anchorNodeIndex].setFixed(true);
+                }
+            }
+        }
 
         for (var i=0;i<_edges.length;i++) {
             let myNewBeam = new Beam([nodes[_edges[i][0]], nodes[_edges[i][1]]], _assignments[i]);
