@@ -241,7 +241,7 @@
 
             // Edge Edge Collision Reaction
             // j < 1000; this means that each edge can be involved in max 300 edge edge collisions
-            for (int j=0;j<300;j++){//for all edges involved with an edge-edge collision (up to 100, had to put a const int in here)
+            for (int j=0;j<2000;j++){//for all edges involved with an edge-edge collision (up to 100, had to put a const int in here)
                 if (j >= int(meta4[1])) break;
                 vec4 nodeOnEdgeMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[x1i, x2i, x3i, x4i]
                 vec4 edgeIndexMeta = getFromArray(meta4[0]*2.0 + float(j) * 2.0 + 1.0, u_textureDimBeamCollisions, u_beamCollisionMeta); //[myXIndex, myNodeIndex, isInside, -5] // isInside = direction
@@ -401,7 +401,7 @@
 
             // Node Face Collision Reaction (Node side)
             // I put j < 1000; this means that each node can be involved in max 300 node-face collisions on the node hitting side
-            for (int j=0;j<300;j++){//for all nodes involved with a node-face collision (up to 100, had to put a const int in here)
+            for (int j=0;j<2000;j++){//for all nodes involved with a node-face collision (up to 100, had to put a const int in here)
                 if (j >= int(meta3[1])) break;
 
                 vec4 collisionFaceMeta = getFromArray(meta3[0]*2.0+float(j) * 2.0, u_textureDimNodeCollisions, u_nodeCollisionFaceMeta); //[faceIndex, a, b, c]
@@ -461,7 +461,7 @@
 
             // Node Face Collision Reaction (Face side, i.e., three nodes)
             // I put j < 1000; this means that each node can be involved in max 300 node-face collisions on the face hit side
-            for (int j=0;j<300;j++){//for all faces involved with a node-face collision (up to 100, had to put a const int in here)
+            for (int j=0;j<2000;j++){//for all faces involved with a node-face collision (up to 100, had to put a const int in here)
                 if (j >= int(meta3[3])) break;
                 // FIX: you can skips calculating barycentric coordinates if distWP is greater than dMax
 
@@ -1419,7 +1419,7 @@
                         <a tabindex="-1">180° Popups<span class="pull-right fui-arrow-right"></span></a>
                         <ul class="dropdown-menu">
                             <li><a href="#" class="demo" data-url="Popup180/bevo.svg">Bevo</a></li>
-                            <li><a href="#" class="demo" data-url="Popup180/bevo.svg">Whale</a></li>
+                            <li><a href="#" class="demo" data-url="Popup180/whale.svg">Whale</a></li>
                             <li><a href="#" class="demo" data-url="Popup180/box.svg">Simple Box Pre-Creased</a></li>
                             <li><a href="#" class="demo" data-url="Popup180/boxMagenta.svg">Simple Box Hinge</a></li>
                             <li><a href="#" class="demo" data-url="Popup180/rightAngleVFold.svg">Right Angle V-Fold</a></li>
@@ -1428,6 +1428,14 @@
                             <li><a href="#" class="demo" data-url="Popup180/flatVFoldRed.svg">flat V-fold Driven</a></li>
                             <li><a href="#" class="demo" data-url="Popup180/simpleDiamond.svg">Simple Diamond</a></li>
                             <li><a href="#" class="demo" data-url="Popup180/simplePyramid.svg">Simple Pyramid</a></li>
+                            <li><a href="#" class="demo" data-url="Popup180/MultipleGlue.svg">Multiple Glue</a></li>
+                            <li><a href="#" class="demo" data-url="Popup180/PullStrap.svg">Pull Strap</a></li>
+                            <li><a href="#" class="demo" data-url="Popup180/tentScaffold.svg">Tent Scaffold</a></li>
+                            <li><a href="#" class="demo" data-url="Popup180/StableBox.svg">Stable Box</a></li>
+                            <li><a href="#" class="demo" data-url="Popup180/PeterDahmen.svg">Peter Dahmen</a></li>
+                            <li><a href="#" class="demo author" data-author="ShelbyArnold" data-url="Popup180/ShelbyArnold.svg">Letter U</a></li>
+                            <li><a href="#" class="demo author" data-author="KyleOlman" data-url="Popup180/KyleOlman.svg">Letter O</a></li>
+                            <li><a href="#" class="demo author" data-author="TinaYeung" data-url="Popup180/TinaYeung.svg">Letter Y</a></li>
                             <li><a href="#" class="demo author" data-author="SimonArzipe" data-url="Popup180/SimonArzipe.svg">Letter A</a></li>
                             <li><a href="#" class="demo author" data-author="LenaIgnestam" data-url="Popup180/LenaIgnestam.svg">Letter I</a></li>
                         </ul>
@@ -2453,6 +2461,18 @@ clampBtn.addEventListener("click", function () {
         <div id="ullagami">
             Designed by Ullagami, original pattern available at <a href="http://ullagami.com/how-to.php" target="_blank">
             Ullagami</a>.
+        </div>
+        <div id="Tina Yeung">
+            Designed by Tina Yeung for the Movable Book Society's 25th year anniversary box set: <a href="https://movablebooksociety.org/product/atoz/" target="_blank">
+            "A to Z: Marvels in Paper Engineering"</a>.
+        </div>
+        <div id="KyleOlman">
+            Designed by Kyle Olman for the Movable Book Society's 25th year anniversary box set: <a href="https://movablebooksociety.org/product/atoz/" target="_blank">
+            "A to Z: Marvels in Paper Engineering"</a>.
+        </div>
+        <div id="ShelbyArnold">
+            Designed by Shelby Arnold for the Movable Book Society's 25th year anniversary box set: <a href="https://movablebooksociety.org/product/atoz/" target="_blank">
+            "A to Z: Marvels in Paper Engineering"</a>.
         </div>
         <div id="LenaIgnestam">
             Designed by <a href="https://popuplab.info/" target="_blank">Lena Ignestam</a> for the Movable Book Society's 25th year anniversary box set: <a href="https://movablebooksociety.org/product/atoz/" target="_blank">

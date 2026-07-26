@@ -8,7 +8,6 @@ function initPattern(globals){
 
     var foldData = {};
     var rawFold = {};
-    var patternHasCuts = false;
 
     function clearFold(){
         foldData.vertices_coords = [];
@@ -23,7 +22,6 @@ function initPattern(globals){
         delete foldData.objects_vertices;
         delete foldData.objects_edges;
         delete foldData.vertices_objects;
-        patternHasCuts = false;
 
         rawFold = {};
     }
@@ -686,9 +684,11 @@ function initPattern(globals){
             (foldData.frame_classes && foldData.frame_classes.includes('creasePattern')) ||
             max.y < scale / 100;
 
+
         if (!isCreasePattern) {
             console.log('Fold data is not a crease pattern, skipping SVG generation');
-            return;
+            console.warn("I really wanted to lift objects and this early return was not letting me see my pattern and I didn't understand why it was necessary so I commented it out but you should definitely come up with a better solution");
+            //return;
         }
 
         var strokeWidth = scale / 300;
@@ -1176,8 +1176,8 @@ function initPattern(globals){
         delete fold.vertices_edges;  
 
         foldData = triangulatePolys(fold, is2d);
-        foldData = makeObjectsVertices(foldData, globals.vertTol);// Group vertices by their enclosed boundary object
-        foldData = liftObjectsForGlueSprings(foldData);// Lift some objects higher than others when glue springs are present
+
+        
 
 
         console.log("Here is fold data after adding objects?", foldData)
@@ -1214,6 +1214,10 @@ function initPattern(globals){
 
         globals.model.buildModel(foldData, allCreaseParams, allGlueParams, allGlueDotParams);
 
+        // FIX: lifitng objects causes problems in generateSVG, need to fix. 
+        foldData = makeObjectsVertices(foldData, globals.vertTol);// Group vertices by their enclosed boundary object
+        foldData = liftObjectsForGlueSprings(foldData, cuts.length);// Lift some objects higher than others when glue springs are present
+
         return foldData;
     }
 
@@ -1223,6 +1227,19 @@ function initPattern(globals){
         }
         return fold;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     function makeObjectsVertices(fold, tol){
@@ -1384,12 +1401,12 @@ function initPattern(globals){
         };
     }
 
-    function liftObjectsForGlueSprings(fold){
-        if (fold.edges_assignment.indexOf("GS") == 0) return fold; // if there are no glue springs return
-        //if (fold.edges_assignment.indexOf("C") < 0) return fold; // if there are any cuts return
-        console.log("pattern has cuts", patternHasCuts);
-        if (patternHasCuts) return fold; // if there are any cuts return (because our object finding algorithm is incorrect for cuts)
-console.log("Lifting")
+    function liftObjectsForGlueSprings(fold, numCuts){
+
+
+        if (fold.edges_assignment.includes("GS") == false) return fold; // return if there are no glue springs
+        if (numCuts>0) return fold; // return if there are cuts (temporary solution)
+        // FIX: need to fix logic for objects with holes 
 
         for (var i=0;i<fold.objects_vertices.length;i++){
             var objectVertices = fold.objects_vertices[i];
@@ -1416,6 +1433,25 @@ console.log("Lifting")
 
         return fold;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     function addGlueSprings(fold){ // FIX: this is copied from getFacesAndVerticesForEdges - need to delete glueparams stuff there
@@ -1642,7 +1678,7 @@ console.log("Lifting")
                 var assignment = fold.edges_assignment[edgeIndex];
                 groups[groupIndex].push(edgeIndex);
                 if (assignment == "C"){
-                    patternHasCuts == true;
+                    console.log()
                     //split cut edge into two boundary edges
                     groups.push([fold.edges_vertices.length]);
                     groupIndex++;
@@ -2359,33 +2395,6 @@ console.log("Lifting")
         
     }
 
-// just for tracking
-    // function printAllEdgesVerticesFaces() {
-    // if (!foldData) {
-    //     console.warn("No fold data available.");
-    //     return;
-    // }
-
-    // console.log("=== Vertices ===");
-    // foldData.vertices_coords.forEach((v, i) => {
-    //     console.log(`Vertex ${i}: [${v.join(", ")}]`);
-    // });
-
-    // console.log("=== Edges ===");
-    // foldData.edges_vertices.forEach((edge, i) => {
-    //     const assignment = foldData.edges_assignment[i];
-    //     const foldAngle = foldData.edges_foldAngle[i];
-    //     console.log(`Edge ${i}: [${edge[0]}, ${edge[1]}], Type: ${assignment}, FoldAngle: ${foldAngle}`);
-    // });
-
-    // console.log("=== Faces ===");
-    // foldData.faces_vertices.forEach((face, i) => {
-    //     console.log(`Face ${i}: Vertices [${face.join(", ")}]`);
-    // }); 
-
-    // console.log(badColors);
-    // }
-
 
 
 
@@ -2396,7 +2405,5 @@ console.log("Lifting")
         getFoldData: getFoldData,
         getTriangulatedFaces: getTriangulatedFaces,
         setFoldData: setFoldData
-        // for Nina
-        //printAllEdgesVerticesFaces: printAllEdgesVerticesFaces
     }
 }

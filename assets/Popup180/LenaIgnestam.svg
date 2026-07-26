@@ -173,12 +173,12 @@
   <line
      stroke="#000000"
      stroke-width="2"
-     x1="113.63704"
+     x1="102.85165"
      x2="57.65889"
      y1="180.87892"
      y2="180.87892"
      id="line8-4-8"
-     style="stroke-width:0.748185;stroke-dasharray:none" />
+     style="stroke-width:0.672255;stroke-dasharray:none" />
   <line
      stroke="#000000"
      stroke-width="2"
@@ -519,4 +519,8 @@
      cx="141.16325"
      cy="92.166443"
      r="3.4655759" />
+  <path
+     style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     d="m 102.65521,180.79112 h 4.19001 v -6.82817 l -3.49167,-0.93111 -2.1726,-4.03482 0.93111,-4.2676 2.48297,-2.94853 3.2589,-1.39667 4.88834,0.0776 3.1813,2.87094 0.77593,4.42278 -1.39667,3.64686 -2.25019,1.78464 -3.10371,0.69833 -0.0776,6.67298 3.80204,-0.0776"
+     id="path2" />
 </svg>

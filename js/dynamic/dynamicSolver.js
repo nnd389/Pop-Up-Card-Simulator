@@ -782,7 +782,7 @@ function initDynamicSolver(globals){
 
 
                 if (boxesOverlap(boxI, boxJ)){ // log 6 node-face collisions and 9 edge-edge collisions
-                    console.log("Bounding box of face ", i, "is collidding with bounding box of face ", j, "!");
+                    //console.log("Bounding box of face ", i, "is collidding with bounding box of face ", j, "!");
                     
                     // 6 node node-face collisions is 6 rows of nodeCollisionFaceMeta and 18 rows of facesAreHitMeta
                     
@@ -1116,7 +1116,7 @@ function initDynamicSolver(globals){
                     // trying to expand my options a bit
                     // FIX: you can skips calculating barycentric coordinates if distWP is greater than dMax
                     if (isInside == true && distWP < dMax*2){ // node i is officially colliding with face j
-                        console.log("Node ", i, " is colliding with face ", j, "!!")
+                        //console.log("Node ", i, " is colliding with face ", j, "!!")
            
                         _index = (index + numFaceColl) * 2 * 4; // _index is the texel index,    _index + k is the element index
                         //sorted by node
