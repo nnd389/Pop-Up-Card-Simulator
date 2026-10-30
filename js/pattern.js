@@ -308,16 +308,22 @@ function initPattern(globals){
 
             //const cx = element.cx.baseVal.value; csometimes returns negative values??
             //const cy = element.cy.baseVal.value;
-            const pt = element.ownerSVGElement.createSVGPoint();
-            pt.x = element.cx.baseVal.value;
-            pt.y = element.cy.baseVal.value;
+            // Use the same transform handling as lines/polylines (applyTransformation: only
+            // transform attributes, no viewBox/width/height scaling). getCTM() includes the
+            // viewBox->viewport scale, so SVGs with a viewBox and mm/px sizing put circles
+            // in a different coordinate space than the crease vertices.
+            const cxRaw = element.cx.baseVal.value;
+            const cyRaw = element.cy.baseVal.value;
+            const rRaw = element.r.baseVal.value;
+            const center = new THREE.Vector3(cxRaw, 0, cyRaw);
+            const edgePt = new THREE.Vector3(cxRaw + rRaw, 0, cyRaw);
+            applyTransformation(center, element);
+            applyTransformation(edgePt, element);
 
-            const screenPt = pt.matrixTransform(element.getCTM());
+            const cx = center.x;
+            const cy = center.z;
 
-            const cx = screenPt.x;
-            const cy = screenPt.y;
-
-            const radius = element.r.baseVal.value;
+            const radius = Math.hypot(edgePt.x - center.x, edgePt.z - center.z); // assumes uniform scale
             const fill = getComputedStyle(element).fill; // for some reason even when I have a filled circle this returns "none"
             const stroke = getComputedStyle(element).stroke; // stroke works!
             const [r, g, b] = stroke.match(/\d+/g).map(Number);
@@ -737,7 +743,7 @@ function initPattern(globals){
         hoverHighlightCircle.style.display = 'none';
         svg.appendChild(hoverHighlightCircle);
 
-        // //---- draw vertex indices ----
+        //---- draw vertex indices ----
         var fontSize = scale / 50;   // tweak as needed
         var textOffset = scale / 200;
 
@@ -757,67 +763,67 @@ function initPattern(globals){
             svg.appendChild(text);
         }
 
-        // // ---- draw face indices ----
+        // ---- draw face indices ----
 
-        // for (var i = 0; i < foldData.faces_vertices.length; i++) {
-        //     var face = foldData.faces_vertices[i];
+        for (var i = 0; i < foldData.faces_vertices.length; i++) {
+            var face = foldData.faces_vertices[i];
 
-        //     if (face.length < 3) continue; // safety check
+            if (face.length < 3) continue; // safety check
 
-        //     // Compute face centroid
-        //     var cx = 0, cy = 0, cz = 0;
-        //     for (var j = 0; j < face.length; j++) {
-        //         var v = foldData.vertices_coords[face[j]];
-        //         cx += v[0];
-        //         cy += v[1];
-        //         cz += v[2];
-        //     }
+            // Compute face centroid
+            var cx = 0, cy = 0, cz = 0;
+            for (var j = 0; j < face.length; j++) {
+                var v = foldData.vertices_coords[face[j]];
+                cx += v[0];
+                cy += v[1];
+                cz += v[2];
+            }
 
-        //     cx /= face.length;
-        //     cy /= face.length;
-        //     cz /= face.length;
-
-        //     var text = document.createElementNS(ns, 'text');
-        //     text.textContent = i;
-
-        //     text.setAttribute('x', cx);
-        //     text.setAttribute('y', cz);          // using x–z plane like edges
-        //     text.setAttribute('font-size', fontSize);
-        //     text.setAttribute('fill', 'blue');
-        //     text.setAttribute('text-anchor', 'middle');
-        //     text.setAttribute('dominant-baseline', 'middle');
-        //     text.setAttribute('pointer-events', 'none');
-
-        //     svg.appendChild(text);
-        // }
-
-        // // ---- draw edge indices ----
-
-        for (var i = 0; i < foldData.edges_vertices.length; i++) {
-            var edge = foldData.edges_vertices[i];
-
-            if (edge.length < 2) continue; // safety check
-
-            var v0 = foldData.vertices_coords[edge[0]];
-            var v1 = foldData.vertices_coords[edge[1]];
-
-            // Compute midpoint of edge
-            var mx = 0.5 * (v0[0] + v1[0]) + 2;
-            var my = 0.5 * (v0[2] + v1[2]) + 2;
+            cx /= face.length;
+            cy /= face.length;
+            cz /= face.length;
 
             var text = document.createElementNS(ns, 'text');
             text.textContent = i;
 
-            text.setAttribute('x', mx);
-            text.setAttribute('y', my);          // using x–z plane like edges
+            text.setAttribute('x', cx);
+            text.setAttribute('y', cz);          // using x–z plane like edges
             text.setAttribute('font-size', fontSize);
-            text.setAttribute('fill', 'red');
+            text.setAttribute('fill', 'blue');
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('dominant-baseline', 'middle');
             text.setAttribute('pointer-events', 'none');
 
             svg.appendChild(text);
         }
+
+        // // ---- draw edge indices ----
+
+        // for (var i = 0; i < foldData.edges_vertices.length; i++) {
+        //     var edge = foldData.edges_vertices[i];
+
+        //     if (edge.length < 2) continue; // safety check
+
+        //     var v0 = foldData.vertices_coords[edge[0]];
+        //     var v1 = foldData.vertices_coords[edge[1]];
+
+        //     // Compute midpoint of edge
+        //     var mx = 0.5 * (v0[0] + v1[0]) + 2;
+        //     var my = 0.5 * (v0[2] + v1[2]) + 2;
+
+        //     var text = document.createElementNS(ns, 'text');
+        //     text.textContent = i;
+
+        //     text.setAttribute('x', mx);
+        //     text.setAttribute('y', my);          // using x–z plane like edges
+        //     text.setAttribute('font-size', fontSize);
+        //     text.setAttribute('fill', 'red');
+        //     text.setAttribute('text-anchor', 'middle');
+        //     text.setAttribute('dominant-baseline', 'middle');
+        //     text.setAttribute('pointer-events', 'none');
+
+        //     svg.appendChild(text);
+        // }
 
 
 

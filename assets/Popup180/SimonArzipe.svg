@@ -107,6 +107,20 @@
      r="2.3097799"
      transform="matrix(0.46892619,0.88323736,0.88323736,-0.46892619,0,0)" />
   <circle
+     style="fill:none;fill-opacity:1;stroke:#00c8ff;stroke-width:1.17389;stroke-dasharray:none;stroke-opacity:1"
+     id="path30081-9-5-4-6-9-6-6-3-9-8"
+     cx="98.406197"
+     cy="1.6974849"
+     r="2.3097799"
+     transform="matrix(0.46892619,0.88323736,0.88323736,-0.46892619,0,0)" />
+  <circle
+     style="fill:none;fill-opacity:1;stroke:#00c8ff;stroke-width:1.17389;stroke-dasharray:none;stroke-opacity:1"
+     id="path30081-9-5-4-6-9-6-6-3-9-8-9"
+     cx="213.47713"
+     cy="146.4648"
+     r="2.3097799"
+     transform="matrix(0.46892619,0.88323736,0.88323736,-0.46892619,0,0)" />
+  <circle
      style="fill:none;fill-opacity:1;stroke:#00e6ff;stroke-width:1.17319;stroke-dasharray:none;stroke-opacity:1"
      id="path30081-9-5-4-6-9-7"
      cx="-146.33754"
@@ -164,12 +178,12 @@
   <line
      stroke="rgb(0,255,255)"
      stroke-width="3.35513"
-     x1="241.84683"
-     x2="228.53163"
-     y1="97.538414"
-     y2="116.42378"
+     x1="241.83492"
+     x2="229.32443"
+     y1="97.545425"
+     y2="120.06088"
      id="line43132-9-4-6-9-1"
-     style="stroke:#ffff00;stroke-width:0.741644;stroke-dasharray:none;stroke-opacity:1" />
+     style="stroke:#ffff00;stroke-width:0.78494;stroke-dasharray:none;stroke-opacity:1" />
   <line
      stroke="rgb(0,255,255)"
      stroke-width="3.35513"
@@ -191,12 +205,12 @@
   <line
      stroke="rgb(0,255,255)"
      stroke-width="3.35513"
-     x1="228.11502"
-     x2="255.40344"
-     y1="116.20814"
-     y2="108.49384"
+     x1="229.30899"
+     x2="256.3786"
+     y1="120.01907"
+     y2="107.6329"
      id="line43132-28-6-23-4-3-7"
-     style="stroke:#ffff00;stroke-width:0.927815;stroke-dasharray:none;stroke-opacity:1" />
+     style="stroke:#ffff00;stroke-width:1.17093;stroke-dasharray:none;stroke-opacity:1" />
   <line
      stroke="rgb(0,255,255)"
      stroke-width="3.35513"
@@ -235,12 +249,12 @@
   <line
      stroke="rgb(0,255,255)"
      stroke-width="3.35513"
-     x1="228.81815"
-     x2="226.76685"
-     y1="115.42802"
-     y2="87.144432"
+     x1="229.40184"
+     x2="226.87727"
+     y1="120.2784"
+     y2="87.152863"
      id="line43132-28-6-23-0-0-0-4-6"
-     style="stroke:#ffff00;stroke-width:0.927815;stroke-dasharray:none;stroke-opacity:1" />
+     style="stroke:#ffff00;stroke-width:1.11392;stroke-dasharray:none;stroke-opacity:1" />
   <line
      stroke="rgb(0,255,255)"
      stroke-width="3.35513"

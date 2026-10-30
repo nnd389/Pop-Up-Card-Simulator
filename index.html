@@ -1578,17 +1578,29 @@ let collisionsEnabled = false;  // default ON // FIX to true
 
 const toggleBtn = document.getElementById("toggleCollisions");
 
-// Set initial label correctly
-toggleBtn.textContent = "Collisions are OFF"; //FIX to ON
+// // Set initial label correctly
+// toggleBtn.textContent = "Collisions are OFF"; //FIX to ON
 
-toggleBtn.addEventListener("click", function () {
-    collisionsEnabled = !collisionsEnabled;
+// toggleBtn.addEventListener("click", function () {
+//     collisionsEnabled = !collisionsEnabled;
+function setCollisionsEnabled(enabled) {
+    collisionsEnabled = enabled;
+
     console.log("Collisions are", collisionsEnabled ? "ON" : "OFF");
 
     toggleBtn.textContent =
         collisionsEnabled
             ? "Collisions are ON"
             : "Collisions are OFF";
+}
+
+window.setCollisionsEnabled = setCollisionsEnabled;
+
+// Set initial label correctly
+setCollisionsEnabled(false); //FIX to ON
+
+toggleBtn.addEventListener("click", function () {
+    setCollisionsEnabled(!collisionsEnabled);
 });
 
 let nodeClampEnabled = false;

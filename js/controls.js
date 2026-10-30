@@ -558,6 +558,18 @@ function initControls(globals){
                 globals.includeCurves = false;
             }
             globals.vertTol = 3;
+            if (url === "Popup180/PullStrap.svg") {
+                globals.glueStiffness = 2.5;
+                globals.materialHasChanged = true;
+                globals.controls.setSliderInputVal("#glueStiffness", globals.glueStiffness);
+
+                globals.numSteps = 10;
+                $(".numStepsPerRender").val(globals.numSteps);
+
+                if (window.setCollisionsEnabled) {
+                    window.setCollisionsEnabled(true);
+                }
+            }
             globals.importer.importDemoFile(url);
         }
     });

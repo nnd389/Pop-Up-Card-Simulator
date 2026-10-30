@@ -4,6 +4,8 @@ This is the repository for Nina De La Torre's final project for Computer Graphic
 <img style="width: 100%; max-width:500px" src="assets/doc/RightVFold.gif" />
 
 # Demo Instructions
+https://nnd389.github.io/Pop-Up-Card-Simulator/
+
 To run this demo yourself, you need to open up a live server first. **In the project root directory,** run 
 ```
 python3 -m http.server 8000

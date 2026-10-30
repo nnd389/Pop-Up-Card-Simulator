@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="138.289mm"
+   height="96.6611mm"
+   viewBox="0 0 392 274"
+   version="1.1"
+   id="svg11"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title1">Qt SVG Document</title>
+  <desc
+     id="desc1">MATLAB, The MathWorks, Inc. Version 26.2.0.3433840 R2026b Update 1</desc>
+  <defs
+     id="defs1" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="193.775,213.372 122.247,213.372 122.247,70.3155 193.775,70.3155 265.303,70.3155 265.303,213.372 193.775,213.372 "
+     id="polyline1"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-rule:evenodd;stroke:#000000;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="379.009,213.372 317.264,213.372 317.264,151.628 379.009,151.628 440.753,151.628 440.753,213.372 379.009,213.372 "
+     id="polyline2"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-rule:evenodd;stroke:#000000;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="379.009,89.8831 317.264,89.8831 317.264,28.1385 379.009,28.1385 440.753,28.1385 440.753,89.8831 379.009,89.8831 "
+     id="polyline3"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-rule:evenodd;stroke:#000000;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="379.009,336.861 318.202,326.14 318.202,264.395 379.009,275.117 439.815,264.395 439.815,326.14 379.009,336.861 "
+     id="polyline4"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-rule:evenodd;stroke:#000000;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="193.775,213.372 193.775,70.3155 "
+     id="polyline5"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-opacity:1;fill-rule:evenodd;stroke:#0000ff;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="379.009,213.372 379.009,151.628 "
+     id="polyline6"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-opacity:1;fill-rule:evenodd;stroke:#ff0000;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="379.009,89.8831 379.009,28.1385 "
+     id="polyline7"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-opacity:1;fill-rule:evenodd;stroke:#ff0000;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="379.009,336.861 379.009,275.117 "
+     id="polyline8"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-opacity:1;fill-rule:evenodd;stroke:#0000ff;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="193.775,70.3155 132.968,80.0993 193.775,90.8212 132.968,141.844 193.775,152.566 122.247,213.372 132.968,141.844 132.968,80.0993 122.247,70.3155 "
+     id="polyline9"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-rule:evenodd;stroke:#ffff00;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <polyline
+     fill="none"
+     vector-effect="none"
+     points="193.775,70.3155 254.582,80.0993 193.775,90.8212 254.582,141.844 193.775,152.566 265.303,213.372 254.582,141.844 254.582,80.0993 265.303,70.3155 "
+     id="polyline10"
+     style="font-style:normal;font-weight:400;font-size:9px;font-family:'Sans Serif';fill-rule:evenodd;stroke:#ffff00;stroke-width:1.38976;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+     transform="scale(0.72)" />
+  <circle
+     style="fill:none;stroke:#00feff;stroke-width:1.43796;stroke-opacity:1"
+     id="path1-9-5-2"
+     cx="139.78349"
+     cy="66.920128"
+     r="4.9833345" />
+  <circle
+     style="fill:none;stroke:#00feff;stroke-width:1.57555;stroke-opacity:1"
+     id="path1-9-5-2-8"
+     cx="272.7886"
+     cy="64.683258"
+     r="5.4601655" />
+  <metadata
+     id="metadata11">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Qt SVG Document</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>
