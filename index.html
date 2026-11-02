@@ -1743,7 +1743,22 @@ clampBtn.addEventListener("click", function () {
     <label for="patternEditingMode">
         <input id="patternEditingMode" type="checkbox"> Pattern Editing Mode
     </label>
+    <label for="showVertexIndices">
+        <input id="showVertexIndices" type="checkbox"> Vertex Indices
+    </label>
+    <label for="showEdgeIndices">
+        <input id="showEdgeIndices" type="checkbox"> Edge Indices
+    </label>
+    <label for="showFaceIndices">
+        <input id="showFaceIndices" type="checkbox"> Face Indices
+    </label>
 </div>
+<style>
+    #svgViewer .vertex-index, #svgViewer .edge-index, #svgViewer .face-index { display: none; }
+    #svgViewer.show-vertex-indices .vertex-index,
+    #svgViewer.show-edge-indices .edge-index,
+    #svgViewer.show-face-indices .face-index { display: inline; }
+</style>
 <div id="helper">Load more origami patterns here!</div>
 <div id="feedbackNotification"><span>Help Us Improve Origami Simulator</span> <span>&#x279C;</span></div>
 <div id="controlsBottom">

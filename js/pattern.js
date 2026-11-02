@@ -90,6 +90,12 @@ function initPattern(globals){
 
     clearAll();
 
+    ["Vertex", "Edge", "Face"].forEach(function(name){
+        $("#show" + name + "Indices").on("change", function(){
+            $("#svgViewer").toggleClass("show-" + name.toLowerCase() + "-indices", this.checked);
+        });
+    });
+
     var SVGloader = new THREE.SVGLoader();
     $("#svgViewer").on("mousemove", function(e){
         if (!patternEditingMode) return;
@@ -848,6 +854,7 @@ function initPattern(globals){
             text.setAttribute('fill', '#000');
             text.setAttribute('pointer-events', 'none'); // prevents blocking clicks
             text.setAttribute('data-vertex-index', i);
+            text.setAttribute('class', 'vertex-index');
 
             svg.appendChild(text);
         }
@@ -882,37 +889,39 @@ function initPattern(globals){
             text.setAttribute('text-anchor', 'middle');
             text.setAttribute('dominant-baseline', 'middle');
             text.setAttribute('pointer-events', 'none');
+            text.setAttribute('class', 'face-index');
 
             svg.appendChild(text);
         }
 
-        // // ---- draw edge indices ----
+        // ---- draw edge indices ----
 
-        // for (var i = 0; i < foldData.edges_vertices.length; i++) {
-        //     var edge = foldData.edges_vertices[i];
+        for (var i = 0; i < foldData.edges_vertices.length; i++) {
+            var edge = foldData.edges_vertices[i];
 
-        //     if (edge.length < 2) continue; // safety check
+            if (edge.length < 2) continue; // safety check
 
-        //     var v0 = foldData.vertices_coords[edge[0]];
-        //     var v1 = foldData.vertices_coords[edge[1]];
+            var v0 = foldData.vertices_coords[edge[0]];
+            var v1 = foldData.vertices_coords[edge[1]];
 
-        //     // Compute midpoint of edge
-        //     var mx = 0.5 * (v0[0] + v1[0]) + 2;
-        //     var my = 0.5 * (v0[2] + v1[2]) + 2;
+            // Compute midpoint of edge
+            var mx = 0.5 * (v0[0] + v1[0]) + 2;
+            var my = 0.5 * (v0[2] + v1[2]) + 2;
 
-        //     var text = document.createElementNS(ns, 'text');
-        //     text.textContent = i;
+            var text = document.createElementNS(ns, 'text');
+            text.textContent = i;
 
-        //     text.setAttribute('x', mx);
-        //     text.setAttribute('y', my);          // using x–z plane like edges
-        //     text.setAttribute('font-size', fontSize);
-        //     text.setAttribute('fill', 'red');
-        //     text.setAttribute('text-anchor', 'middle');
-        //     text.setAttribute('dominant-baseline', 'middle');
-        //     text.setAttribute('pointer-events', 'none');
+            text.setAttribute('x', mx);
+            text.setAttribute('y', my);          // using x–z plane like edges
+            text.setAttribute('font-size', fontSize);
+            text.setAttribute('fill', 'red');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dominant-baseline', 'middle');
+            text.setAttribute('pointer-events', 'none');
+            text.setAttribute('class', 'edge-index');
 
-        //     svg.appendChild(text);
-        // }
+            svg.appendChild(text);
+        }
 
 
 
