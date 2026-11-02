@@ -1958,6 +1958,40 @@ clampBtn.addEventListener("click", function () {
                           Your browser does not support SVG
                         </object>
                     <ul>
+                        <li>If you aren't sure what the angle of your crease should be, but you know it should tend towards the mountain or valley side, 
+                            use a precreased edge. Precrease mountain edges have <b style="color:#ff009b">pink</b> stroke - rgb(255, 0, 155), hex #ff009b. 
+                            Precreased valley edges have <b style="color:#9900ff">purple</b> stroke - rgb(155, 0, 255), hex #9900ff. 
+                            These edges act as a freely swing hinge towards their desired side but resist their opposite side. </li>
+                    </ul>
+                        <object type="image/svg+xml" data="assets/doc/box.svg"
+                                style="width:100%;max-width:420px;aspect-ratio:3200/3150">
+                            Your browser does not support SVG
+                        </object>
+                    <ul>
+                        <li>To glue pieces of paper together, use glue dots! You can specify vertices that you want to connect by adding a pair of circles
+                            with matching stroke color around the vertices that you want to connect (except for red, see below). The simulator will identify the two connected vertices, 
+                            and connect those vertices with a spring that tries to be as short as possible. Since you are essentially connecting separate points 
+                            with rubber bands, things can still slide around a bit, but try increasing the glue spring strength in advance settings and waiting 
+                            for the simulation to settle to see what the final result will look like. The example below shows how a simple right angle V-fold 
+                            pop-up card pattern would look. It's up to the designer to make sure that lengths are preserved, meaning the places that you glue should 
+                            have the same lengths of what you are gluing. Glue dots must be <b>circles</b> in root, not ellipses.  
+                        </li>
+                    </ul>
+                        <object type="image/svg+xml" data="assets/doc/glueDots.svg"
+                                style="width:100%;max-width:420px;aspect-ratio:2400/2970">
+                            Your browser does not support SVG
+                        </object>
+                    <ul>
+                        <li>Circles with <b style="color:#ff0000">red</b> stroke - rgb(255, 0, 0), hex #ff0000 are reserved for anchoring nodes. 
+                            You can use red circles if you are testing out a pull tab.  
+                        </li>
+                    </ul>
+                        <object type="image/svg+xml" data="assets/doc/KyleOlman.svg"
+                                style="width:100%;max-width:420px;aspect-ratio:3900/3100">
+                            Your browser does not support SVG
+                        </object>
+
+                    <ul>
                         <li>Line style and stroke width do not matter.</li>
                         <li>Remove clipping masks from your file before importing.</li>
                         <li>This tool should be able to automatically clean files of slightly misaligned vertices, stray vertices,
@@ -1979,6 +2013,9 @@ clampBtn.addEventListener("click", function () {
                         <li>Finally hit <b>Save As</b> and select <b>.svg</b> extension. I'm using the default SVG 1.1 settings, but version 1.0 will work as well.</li>
                     </ul>
                 <img style="width:100%" src="assets/doc/illustratorSaveOptions.jpg"/>
+
+                <b>For Inkscape users:</b><br/><br/>
+                    Make sure to save as <b>Plain SVG</b> instead of inkscape svg. 
                 </p>
             </div>
         </div><!-- /.modal-content -->
