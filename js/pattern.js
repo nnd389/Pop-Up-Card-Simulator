@@ -289,17 +289,17 @@ function initPattern(globals){
         parsePolyline(_verticesRaw, _v1erticesAssignmentsRaw, _segmentsRaw, $polylines.filter(filter));
     }
 
-    // function parseRGB(rgbString) {
-    //     const match = rgbString.match(/\d+/g);
-    //     if (!match || match.length < 3) return null;
-
-    //     return {
-    //         r: Number(match[0]),
-    //         g: Number(match[1]),
-    //         b: Number(match[2]), 
-    //         a: nums[3] !== undefined ? Number(nums[3]) : 1
-    //     };
-    // }
+    // Colors that already mean something else, so a circle in one of them is never a glue dot.
+    var reservedCircleColors = [
+        "0,0,0",       // black   - boundary
+        "255,0,0",     // red     - mountain (as a circle: fixed node)
+        "0,0,255",     // blue    - valley
+        "255,0,155",   // pink    - pre-creased mountain
+        "155,0,255",   // purple  - pre-creased valley
+        "0,255,0",     // green   - cut
+        "255,255,0",   // yellow  - triangulation
+        "255,0,255"    // magenta - hinge
+    ];
 
     function getCircleParams(_verticesRaw, _v1erticesAssignmentsRaw, $elements) {
         var _circleParams = [] // [cx, cy, radius, g]
@@ -324,18 +324,107 @@ function initPattern(globals){
             const cy = center.z;
 
             const radius = Math.hypot(edgePt.x - center.x, edgePt.z - center.z); // assumes uniform scale
-            const fill = getComputedStyle(element).fill; // for some reason even when I have a filled circle this returns "none"
+
+
+            
             const stroke = getComputedStyle(element).stroke; // stroke works!
-            const [r, g, b] = stroke.match(/\d+/g).map(Number);
+            const rgb = stroke.match(/\d+/g);
+            if (!rgb || rgb.length < 3) continue; // stroke="none" or unparseable: not a dot
+            const colorKey = rgb.slice(0, 3).map(Number).join(",");
 
-            _circleParams.push([cx, cy, radius, g, r]);
+            var type;
+            if (colorKey == "255,0,0") type = "anchor";
+            else if (reservedCircleColors.indexOf(colorKey) != -1) type = "reserved";
+            else type = "glue";
 
-            if (r==0 && b==255 && g>=1 && g<=255) {
+            _circleParams.push([cx, cy, radius, colorKey, type]);
+
+            if (type == "glue") {
                 _verticesRaw.push({x:cx, y:0, z:cy});
-                _v1erticesAssignmentsRaw.push(g);
+                _v1erticesAssignmentsRaw.push(colorKey);
             }
+
+
+
         }
         return _circleParams;
+    }
+
+    
+
+
+    //FIX: currently not working, delete it or fix it. 
+    // true if (x, y) falls inside the bounding box of a glue dot circle (same test addGlueSprings uses)
+    function pointInGlueDot(x, y){
+        for (var j=0;j<circleParams.length;j++){
+            if (circleParams[j][4] == "reserved") continue;
+            var cx = circleParams[j][0];
+            var cy = circleParams[j][1];
+            var rad = circleParams[j][2];
+            if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad) return true;
+        }
+        return false;
+    }
+
+    // If a glue dot's center sits in the middle of an edge (not on a corner), split that edge
+    // at the dot so there is a vertex for the glue spring to attach to.
+    function splitEdgesAtGlueDots(fold, tol){
+        for (var c=0;c<circleParams.length;c++){
+            if (circleParams[c][4] == "reserved") continue;
+            var cx = circleParams[c][0];
+            var cy = circleParams[c][1];
+            var rad = circleParams[c][2];
+
+            // already on a corner (a connected vertex is inside the circle): nothing to split
+            var onCorner = false;
+            for (var e=0;e<fold.edges_vertices.length && !onCorner;e++){
+                for (var k=0;k<2;k++){
+                    var p = fold.vertices_coords[fold.edges_vertices[e][k]];
+                    if (cx-rad<p[0] && p[0]<cx+rad && cy-rad<p[1] && p[1]<cy+rad){
+                        onCorner = true;
+                        break;
+                    }
+                }
+            }
+            if (onCorner) continue;
+
+            // find the closest edge whose interior passes within tol of the dot's center
+            var bestEdge = -1;
+            var bestDist = tol;
+            var bestPt = null;
+            for (var e=0;e<fold.edges_vertices.length;e++){
+                var a = fold.vertices_coords[fold.edges_vertices[e][0]];
+                var b = fold.vertices_coords[fold.edges_vertices[e][1]];
+                var dx = b[0]-a[0];
+                var dy = b[1]-a[1];
+                var len = Math.sqrt(dx*dx+dy*dy);
+                if (len == 0) continue;
+                var along = ((cx-a[0])*dx + (cy-a[1])*dy)/len; // distance along the edge from a
+                if (along <= tol || along >= len-tol) continue; // too close to an end: that's a corner
+                var px = a[0] + dx*along/len;
+                var py = a[1] + dy*along/len;
+                var dist = Math.sqrt((cx-px)*(cx-px) + (cy-py)*(cy-py));
+                if (dist <= bestDist){
+                    bestDist = dist;
+                    bestEdge = e;
+                    bestPt = [px, py];
+                }
+            }
+            if (bestEdge == -1) continue;
+
+            var edge = fold.edges_vertices[bestEdge];
+            var assignment = fold.edges_assignment[bestEdge];
+            var foldAngle = fold.edges_foldAngle[bestEdge];
+            var color = fold.edges_greenVal[bestEdge];
+            var newIndex = fold.vertices_coords.length;
+            fold.vertices_coords.push(bestPt);
+            fold.v1ertices_assignments.push(null);
+            fold.edges_vertices.splice(bestEdge, 1, [edge[0], newIndex], [newIndex, edge[1]]);
+            fold.edges_assignment.splice(bestEdge, 1, assignment, assignment);
+            fold.edges_foldAngle.splice(bestEdge, 1, foldAngle, foldAngle);
+            fold.edges_greenVal.splice(bestEdge, 1, color, color);
+        }
+        return fold;
     }
 
 
@@ -1134,6 +1223,11 @@ function initPattern(globals){
         foldData = removeStrayVertices(foldData);//delete stray anchors
         foldData = removeRedundantVertices(foldData, 0.01);//remove vertices that split edge
 
+        // for allowing glue dots mid-edge
+        foldData = FOLD.filter.removeDuplicateEdges_vertices(foldData);//remove duplicate edges
+        foldData = splitEdgesAtGlueDots(foldData, globals.vertTol); // put a vertex under glue dots that sit mid-edge
+        foldData = FOLD.convert.edges_vertices_to_vertices_vertices_unsorted(foldData);
+
         foldData.vertices_vertices = FOLD.convert.sort_vertices_vertices(foldData);
         foldData = FOLD.convert.vertices_vertices_to_faces_vertices(foldData);
 
@@ -1577,14 +1671,12 @@ function initPattern(globals){
                 var cx = circleParams[j][0];
                 var cy = circleParams[j][1];
                 var rad = circleParams[j][2];
-                var g = circleParams[j][3];
-                var r = circleParams[j][4];
-                
-                if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad && r==0){
-                    circleSpringParams.push([i, g]);
-                } else if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad && r==255){
-                    anchorNodeParams.push([i]);
-                    
+                var g = circleParams[j][3];     // color key, e.g. "0,200,255"
+                var type = circleParams[j][4];  // "glue", "anchor" or "reserved"
+
+                if (cx-rad<x && x<cx+rad && cy-rad<y && y<cy+rad){
+                    if (type == "glue") circleSpringParams.push([i, g]);
+                    else if (type == "anchor") anchorNodeParams.push([i]);
                 }
             }
         }
@@ -1983,6 +2075,11 @@ function initPattern(globals){
                 continue;
             }
             var vertex_coord = fold.vertices_coords[i];
+            if (pointInGlueDot(vertex_coord[0], vertex_coord[vertex_coord.length-1])){ // keep vertices under glue dots
+                old2new.push(newIndex++);
+                continue;
+            }
+
             var neighbor0 = fold.vertices_coords[vertex_vertices[0]];
             var neighbor1 = fold.vertices_coords[vertex_vertices[1]];
             var threeD = vertex_coord.length == 3;
