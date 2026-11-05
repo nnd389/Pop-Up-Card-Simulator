@@ -60,19 +60,19 @@
   <line
      stroke="#0000ff"
      stroke-width="2.13169"
-     x1="253.73946"
-     x2="205.14001"
-     y1="172.22173"
-     y2="226.17439"
+     x1="126.85349"
+     x2="78.254044"
+     y1="52.331978"
+     y2="106.28465"
      id="line12-9-7"
      style="stroke:#000000;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
   <line
      stroke="#0000ff"
      stroke-width="2.13169"
-     x1="204.99171"
-     x2="205.22626"
-     y1="171.93784"
-     y2="225.37656"
+     x1="78.105743"
+     x2="78.340286"
+     y1="52.048088"
+     y2="105.48681"
      id="line12-9-7-0"
      style="stroke:#ff009b;stroke-width:0.861;stroke-dasharray:none;stroke-opacity:1" />
   <line
@@ -87,19 +87,19 @@
   <line
      stroke="#0000ff"
      stroke-width="2.13169"
-     x1="156.45284"
-     x2="205.05229"
-     y1="172.22173"
-     y2="226.17441"
+     x1="29.566868"
+     x2="78.166321"
+     y1="52.331978"
+     y2="106.28466"
      id="line12-9-6-5"
      style="stroke:#000000;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
   <line
      stroke="#0000ff"
      stroke-width="2.13169"
-     x1="156.16046"
-     x2="253.57251"
-     y1="172.44424"
-     y2="171.75294"
+     x1="29.274494"
+     x2="126.68654"
+     y1="52.554497"
+     y2="51.863197"
      id="line12-9-6-5-6"
      style="stroke:#000000;stroke-width:1;stroke-dasharray:none;stroke-opacity:1" />
   <circle
@@ -111,31 +111,31 @@
   <circle
      style="fill:none;stroke:#00ffff;stroke-opacity:1"
      id="path1-3"
-     cx="205.18166"
-     cy="225.64619"
+     cx="78.295685"
+     cy="105.75645"
      r="3.4655759" />
   <circle
-     style="fill:none;stroke:#00feff;stroke-opacity:1"
+     style="fill:none;stroke:#f7b524;stroke-opacity:1"
      id="path1-3-0"
-     cx="253.68161"
-     cy="173.21169"
+     cx="126.79564"
+     cy="53.321938"
      r="3.4655759" />
   <circle
-     style="fill:none;stroke:#00feff;stroke-opacity:1"
+     style="fill:none;stroke:#f7b524;stroke-opacity:1"
      id="path1-3-0-1"
      cx="128.08423"
      cy="136.63721"
      r="3.4655759" />
   <circle
-     style="fill:none;stroke:#00fdff;stroke-opacity:1"
+     style="fill:none;stroke:#008f47;stroke-opacity:1"
      id="path1-3-0-1-3"
      cx="28.451445"
      cy="136.61101"
      r="3.4655759" />
   <circle
-     style="fill:none;stroke:#00fdff;stroke-opacity:1"
+     style="fill:none;stroke:#008f47;stroke-opacity:1"
      id="path1-3-0-1-3-0"
-     cx="157.57996"
-     cy="172.38716"
+     cx="30.693989"
+     cy="52.497414"
      r="3.4655759" />
 </svg>
